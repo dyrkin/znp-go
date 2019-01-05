@@ -37,12 +37,35 @@ type Znp struct {
 	Errors       chan error
 }
 
+type Network struct {
+	NeighborPanID   uint16
+	LogicalChannel  uint8
+	StackProfile    uint8
+	ZigbeeVersion   uint8
+	BeaconOrder     uint8
+	SuperFrameOrder uint8
+	PermitJoin      uint8
+}
+
 type ResetRequest struct {
 	ResetType byte
 }
 
+type Capabilities struct {
+	Sys   uint8
+	Mac   uint8
+	Nwk   uint8
+	Af    uint8
+	Zdo   uint8
+	Sapi  uint8
+	Util  uint8
+	Debug uint8
+	App   uint8
+	Zoad  uint8
+}
+
 type PingResponse struct {
-	Capabilities uint16
+	Capabilities *Capabilities
 }
 
 type VersionResponse struct {

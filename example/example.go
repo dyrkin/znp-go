@@ -39,7 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", ping)
+	fmt.Printf("%s\n", ping)
 
 	version, err := z.Version()
 	if err != nil {
@@ -47,7 +47,7 @@ func main() {
 	}
 	fmt.Printf("%+v\n", version)
 
-	enabledLed, err := z.LedControl(1, 1)
+	enabledLed, err := z.LedControl(1, 0)
 	if err != nil {
 		log.Fatal(err)
 	}

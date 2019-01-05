@@ -48,6 +48,8 @@ func serialize(request interface{}) []byte {
 			for _, v := range value {
 				writeNetwork(buf, v)
 			}
+		case *Capabilities:
+			writeCapabilities(buf, value)
 		default:
 			write(buf, endianness, value)
 		}
@@ -132,6 +134,9 @@ func deserialize(payload []byte, response interface{}) {
 			for i := range v {
 				v[i] = readNetwork(buf)
 			}
+			valueMirror.Set(reflect.ValueOf(v))
+		case *Capabilities:
+			v := readCapabilities(buf)
 			valueMirror.Set(reflect.ValueOf(v))
 		default:
 			log.Printf("Unsupported type: %+v", value)

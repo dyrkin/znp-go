@@ -68,6 +68,7 @@ func (s *MySuite) TestDeserialize(c *C) {
 		F12  []byte
 		F013 uint8
 		F13  []*Network
+		F14  *Capabilities
 	}
 	networks := []*Network{
 		&Network{
@@ -91,7 +92,7 @@ func (s *MySuite) TestDeserialize(c *C) {
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F10: "0x00124b00019c2ee9",
 		F011: 2, F11: []uint16{4, 5}, F012: 3, F12: []byte{1, 2, 3},
-		F013: 2, F13: networks}
+		F013: 2, F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}}
 	payload := serialize(test)
 	res := &Test{}
 	deserialize(payload, res)
