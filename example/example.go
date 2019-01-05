@@ -44,7 +44,7 @@ func main() {
 	}
 	fmt.Printf("%+v\n", version)
 
-	enabledLed, err := c.LedControl(1, 0)
+	enabledLed, err := c.LedControl(1, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
