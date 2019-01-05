@@ -1,4 +1,4 @@
-package cc
+package znp
 
 import (
 	"sync"

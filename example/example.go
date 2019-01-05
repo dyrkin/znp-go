@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	cc "github.com/dyrkin/cc-go"
 	unpi "github.com/dyrkin/unpi-go"
+	znp "github.com/dyrkin/znp-go"
 	serial "go.bug.st/serial.v1"
 )
 
@@ -21,30 +21,33 @@ func main() {
 	port.SetRTS(true)
 
 	u := unpi.New(1, port)
-	c := cc.New(u)
+	z := znp.New(u)
 	go func() {
 		for {
 			select {
-			case err := <-c.Errors:
+			case err := <-z.Errors:
 				fmt.Printf("Error: %s", err)
-			case async := <-c.AsyncInbound:
+			case async := <-z.AsyncInbound:
 				fmt.Printf("Async: %v", async)
 			}
 		}
 	}()
-	ping, err := c.Ping()
+
+	// c.Reset(1)
+
+	ping, err := z.Ping()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v\n", ping)
 
-	version, err := c.Version()
+	version, err := z.Version()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v\n", version)
 
-	enabledLed, err := c.LedControl(1, 1)
+	enabledLed, err := z.LedControl(1, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
