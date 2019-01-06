@@ -1,6 +1,7 @@
 package znp
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -35,54 +36,6 @@ type Znp struct {
 	inbound      chan *unpi.Frame
 	AsyncInbound chan *unpi.Frame
 	Errors       chan error
-}
-
-type Network struct {
-	NeighborPanID   uint16
-	LogicalChannel  uint8
-	StackProfile    uint8
-	ZigbeeVersion   uint8
-	BeaconOrder     uint8
-	SuperFrameOrder uint8
-	PermitJoin      uint8
-}
-
-type ResetRequest struct {
-	ResetType byte
-}
-
-type Capabilities struct {
-	Sys   uint8
-	Mac   uint8
-	Nwk   uint8
-	Af    uint8
-	Zdo   uint8
-	Sapi  uint8
-	Util  uint8
-	Debug uint8
-	App   uint8
-	Zoad  uint8
-}
-
-type PingResponse struct {
-	Capabilities *Capabilities
-}
-
-type VersionResponse struct {
-	TransportRev uint8
-	Product      uint8
-	MajorRel     uint8
-	MinorRel     uint8
-	MaintRel     uint8
-}
-
-type LedControlRequest struct {
-	LedID uint8
-	Mode  uint8
-}
-
-type LedControlResponse struct {
-	Status uint8
 }
 
 func New(u *unpi.Unpi) *Znp {
@@ -121,9 +74,48 @@ func (znp *Znp) Version() (*VersionResponse, error) {
 	return rsp, nil
 }
 
-func (znp *Znp) LedControl(ledid uint8, mode uint8) (*LedControlResponse, error) {
-	req := &LedControlRequest{LedID: ledid, Mode: mode}
-	rsp := &LedControlResponse{}
+func (znp *Znp) SetExtAddr(extAddr string) (*StatusResponse, error) {
+	req := &SetExtAddrReqest{ExtAddress: extAddr}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 3, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+func (znp *Znp) GetExtAddr() (*GetExtAddrResponse, error) {
+	rsp := &GetExtAddrResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 4, nil, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+func (znp *Znp) RamRead(address uint16, len uint8) (*RamReadResponse, error) {
+	req := &RamReadRequest{Address: address, Len: len}
+	rsp := &RamReadResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 5, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+func (znp *Znp) RamWrite(address uint16, value []uint8) (*StatusResponse, error) {
+	req := &RamWriteRequest{Address: address, Value: value}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 6, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+func (znp *Znp) LedControl(ledID uint8, mode uint8) (*StatusResponse, error) {
+	req := &LedControlRequest{LedID: ledID, Mode: mode}
+	rsp := &StatusResponse{}
 	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 10, req, rsp)
 	if err != nil {
 		return nil, err
@@ -192,14 +184,40 @@ func (znp *Znp) startProcessor() {
 			}
 		case frame := <-znp.inbound:
 			if frame.CommandType == unpi.C_SRSP {
-				key := &registryKey{frame.Subsystem, frame.Command}
-				value, ok := registry.Get(key)
-				if !ok {
-					znp.Errors <- fmt.Errorf("Unknown response received: %v", frame)
-					continue
+				//process error response
+				if frame.Subsystem == unpi.S_RES0 && frame.Command == 0 {
+					errorCode := frame.Payload[0]
+					subsystem := unpi.Subsystem(frame.Payload[1] & 0x1F)
+					command := frame.Payload[2]
+					key := &registryKey{subsystem, command}
+					value, ok := registry.Get(key)
+					if !ok {
+						znp.Errors <- fmt.Errorf("Unknown response received: %v", frame)
+						continue
+					}
+					value.deadline.Cancel()
+					var errorMessage string
+					switch errorCode {
+					case 1:
+						errorMessage = "Invalid subsystem"
+					case 2:
+						errorMessage = "Invalid command ID"
+					case 3:
+						errorMessage = "Invalid parameter"
+					case 4:
+						errorMessage = "Invalid length"
+					}
+					value.syncErr <- errors.New(errorMessage)
+				} else {
+					key := &registryKey{frame.Subsystem, frame.Command}
+					value, ok := registry.Get(key)
+					if !ok {
+						znp.Errors <- fmt.Errorf("Unknown response received: %v", frame)
+						continue
+					}
+					value.deadline.Cancel()
+					value.syncRsp <- frame
 				}
-				value.deadline.Cancel()
-				value.syncRsp <- frame
 			} else {
 				znp.AsyncInbound <- frame
 			}

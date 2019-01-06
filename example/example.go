@@ -33,7 +33,7 @@ func main() {
 		}
 	}()
 
-	// c.Reset(1)
+	// z.Reset(0)
 
 	ping, err := z.Ping()
 	if err != nil {
@@ -52,4 +52,16 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v\n", enabledLed)
+
+	setextAddr, err := z.SetExtAddr("0x00124b00019c2ee9")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", setextAddr)
+
+	getextAddr, err := z.GetExtAddr()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", getextAddr)
 }

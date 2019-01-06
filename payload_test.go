@@ -51,24 +51,21 @@ func (s *MySuite) TestSerialize(c *C) {
 
 func (s *MySuite) TestDeserialize(c *C) {
 	type Test struct {
-		F0   uint8
-		F1   uint16 `endianness:"be"`
-		F2   uint16
-		F3   uint32
-		F4   [8]byte
-		F5   [16]byte
-		F6   [18]byte
-		F7   [32]byte
-		F8   [42]byte
-		F9   [100]byte
-		F10  string `subtype:"longaddr"` // string '0x00124b00019c2ee9'
-		F011 uint8
-		F11  []uint16
-		F012 uint8
-		F12  []byte
-		F013 uint8
-		F13  []*Network
-		F14  *Capabilities
+		F0  uint8
+		F1  uint16 `endianness:"be"`
+		F2  uint16
+		F3  uint32
+		F4  [8]byte
+		F5  [16]byte
+		F6  [18]byte
+		F7  [32]byte
+		F8  [42]byte
+		F9  [100]byte
+		F10 string     `subtype:"longaddr"` // string '0x00124b00019c2ee9'
+		F11 []uint16   `len:"uint8"`
+		F12 []byte     `len:"uint8"`
+		F13 []*Network `len:"uint8"`
+		F14 *Capabilities
 	}
 	networks := []*Network{
 		&Network{
@@ -91,8 +88,8 @@ func (s *MySuite) TestDeserialize(c *C) {
 		},
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F10: "0x00124b00019c2ee9",
-		F011: 2, F11: []uint16{4, 5}, F012: 3, F12: []byte{1, 2, 3},
-		F013: 2, F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}}
+		F11: []uint16{4, 5}, F12: []byte{1, 2, 3},
+		F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}}
 	payload := serialize(test)
 	res := &Test{}
 	deserialize(payload, res)

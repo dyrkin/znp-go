@@ -37,6 +37,20 @@ func serialize(request interface{}) []byte {
 		tagMirror := typeMirror.Tag
 		subtype := tagMirror.Get("subtype")
 		endianness := tagMirror.Get("endianness")
+		len := tagMirror.Get("len")
+		if len != "" {
+			switch len {
+			case "uint8":
+				v := uint8(valueMirror.Len())
+				write(buf, endianness, v)
+			case "uint16":
+				v := uint16(valueMirror.Len())
+				write(buf, endianness, v)
+			case "uint32":
+				v := uint32(valueMirror.Len())
+				write(buf, endianness, v)
+			}
+		}
 		switch value := valueMirror.Interface().(type) {
 		case string:
 			switch subtype {
@@ -63,13 +77,31 @@ func deserialize(payload []byte, response interface{}) {
 	}
 	buf := bytes.NewBuffer(payload)
 	mirror := reflect.ValueOf(response).Elem()
-	var dynBufLen uint64
 	for i := 0; i < mirror.NumField(); i++ {
 		valueMirror := mirror.Field(i)
 		typeMirror := mirror.Type().Field(i)
 		tagMirror := typeMirror.Tag
 		subtype := tagMirror.Get("subtype")
 		endianness := tagMirror.Get("endianness")
+		len := tagMirror.Get("len")
+		var dynBufLen uint32
+		if len != "" {
+			switch len {
+			case "uint8":
+				var v uint8
+				read(buf, endianness, &v)
+				dynBufLen = uint32(v)
+			case "uint16":
+				var v uint16
+				read(buf, endianness, &v)
+				dynBufLen = uint32(v)
+			case "uint32":
+				var v uint32
+				read(buf, endianness, &v)
+				dynBufLen = v
+			}
+
+		}
 		switch value := valueMirror.Interface().(type) {
 		case string:
 			switch subtype {
@@ -82,17 +114,14 @@ func deserialize(payload []byte, response interface{}) {
 			var v uint8
 			read(buf, endianness, &v)
 			valueMirror.Set(reflect.ValueOf(v))
-			dynBufLen = uint64(v)
 		case uint16:
 			var v uint16
 			read(buf, endianness, &v)
 			valueMirror.Set(reflect.ValueOf(v))
-			dynBufLen = uint64(v)
 		case uint32:
 			var v uint32
 			read(buf, endianness, &v)
 			valueMirror.Set(reflect.ValueOf(v))
-			dynBufLen = uint64(v)
 		case [8]byte:
 			var v [8]byte
 			read(buf, endianness, &v)
