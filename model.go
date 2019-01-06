@@ -53,12 +53,12 @@ type StatusResponse struct {
 
 //SetExtAddrReqest is used to set the extended address of the device
 type SetExtAddrReqest struct {
-	ExtAddress string `subtype:"longaddr"` //The device’s extended address.
+	ExtAddress string `hex:"uint64"` //The device’s extended address.
 }
 
 //GetExtAddrResponse is used to get the extended address of the device.
 type GetExtAddrResponse struct {
-	ExtAddress string `subtype:"longaddr"` //The device’s extended address.
+	ExtAddress string `hex:"uint64"` //The device’s extended address.
 }
 
 //RamReadRequest is used by the tester to read a single memory location in the target RAM. The

@@ -168,7 +168,7 @@ func (znp *Znp) startProcessor() {
 				key := &registryKey{frame.Subsystem, frame.Command}
 				value := &registryValue{req.syncRsp, req.syncErr, deadline}
 				registry.Register(key, value)
-				znp.u.Write(req.frame)
+				znp.u.WriteFrame(req.frame)
 				go func() {
 					select {
 					case _ = <-deadline.timer.C:
@@ -180,7 +180,7 @@ func (znp *Znp) startProcessor() {
 					registry.Unregister(key)
 				}()
 			case *Async:
-				znp.u.Write(req.frame)
+				znp.u.WriteFrame(req.frame)
 			}
 		case frame := <-znp.inbound:
 			if frame.CommandType == unpi.C_SRSP {
@@ -227,7 +227,7 @@ func (znp *Znp) startProcessor() {
 
 func (znp *Znp) incomingLoop() {
 	for {
-		frame, err := znp.u.Read()
+		frame, err := znp.u.ReadFrame()
 		if err != nil {
 			znp.Errors <- err
 		} else {

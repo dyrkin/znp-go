@@ -24,7 +24,7 @@ func (s *MySuite) TestSerialize(c *C) {
 		F7  [32]byte
 		F8  [42]byte
 		F9  [100]byte
-		F11 string `subtype:"longaddr"` // string '0x00124b00019c2ee9'
+		F11 string `hex:"uint64"` // string '0x00124b00019c2ee9'
 		F12 [2]uint16
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F11: "0x00124b00019c2ee9", F12: [2]uint16{4, 5}}
@@ -61,11 +61,12 @@ func (s *MySuite) TestDeserialize(c *C) {
 		F7  [32]byte
 		F8  [42]byte
 		F9  [100]byte
-		F10 string     `subtype:"longaddr"` // string '0x00124b00019c2ee9'
+		F10 string     `hex:"uint64"` // string '0x00124b00019c2ee9'
 		F11 []uint16   `len:"uint8"`
 		F12 []byte     `len:"uint8"`
 		F13 []*Network `len:"uint8"`
 		F14 *Capabilities
+		F15 string `hex:"uint32"` // string '0x00124b00'
 	}
 	networks := []*Network{
 		&Network{
@@ -89,7 +90,7 @@ func (s *MySuite) TestDeserialize(c *C) {
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F10: "0x00124b00019c2ee9",
 		F11: []uint16{4, 5}, F12: []byte{1, 2, 3},
-		F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}}
+		F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}, F15: "0x00124b00"}
 	payload := serialize(test)
 	res := &Test{}
 	deserialize(payload, res)

@@ -35,7 +35,7 @@ func serialize(request interface{}) []byte {
 		valueMirror := mirror.Field(i)
 		typeMirror := mirror.Type().Field(i)
 		tagMirror := typeMirror.Tag
-		subtype := tagMirror.Get("subtype")
+		hex := tagMirror.Get("hex")
 		endianness := tagMirror.Get("endianness")
 		len := tagMirror.Get("len")
 		if len != "" {
@@ -53,10 +53,19 @@ func serialize(request interface{}) []byte {
 		}
 		switch value := valueMirror.Interface().(type) {
 		case string:
-			switch subtype {
-			case "longaddr":
+			switch hex {
+			case "uint64":
 				addr, _ := strconv.ParseInt(value[2:], 16, 64)
 				write(buf, endianness, addr)
+			case "uint32":
+				addr, _ := strconv.ParseInt(value[2:], 16, 32)
+				write(buf, endianness, uint32(addr))
+			case "uint16":
+				addr, _ := strconv.ParseInt(value[2:], 16, 16)
+				write(buf, endianness, uint16(addr))
+			case "uint8":
+				addr, _ := strconv.ParseInt(value[2:], 16, 8)
+				write(buf, endianness, uint8(addr))
 			}
 		case []*Network:
 			for _, v := range value {
@@ -81,7 +90,7 @@ func deserialize(payload []byte, response interface{}) {
 		valueMirror := mirror.Field(i)
 		typeMirror := mirror.Type().Field(i)
 		tagMirror := typeMirror.Tag
-		subtype := tagMirror.Get("subtype")
+		hex := tagMirror.Get("hex")
 		endianness := tagMirror.Get("endianness")
 		len := tagMirror.Get("len")
 		var dynBufLen uint32
@@ -100,15 +109,26 @@ func deserialize(payload []byte, response interface{}) {
 				read(buf, endianness, &v)
 				dynBufLen = v
 			}
-
 		}
 		switch value := valueMirror.Interface().(type) {
 		case string:
-			switch subtype {
-			case "longaddr":
+			switch hex {
+			case "uint64":
 				var v uint64
 				read(buf, endianness, &v)
 				valueMirror.SetString(fmt.Sprintf("0x%016x", v))
+			case "uint32":
+				var v uint32
+				read(buf, endianness, &v)
+				valueMirror.SetString(fmt.Sprintf("0x%08x", v))
+			case "uint16":
+				var v uint16
+				read(buf, endianness, &v)
+				valueMirror.SetString(fmt.Sprintf("0x%04x", v))
+			case "uint8":
+				var v uint8
+				read(buf, endianness, &v)
+				valueMirror.SetString(fmt.Sprintf("0x%02x", v))
 			}
 		case uint8:
 			var v uint8
