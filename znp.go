@@ -1,6 +1,7 @@
 package znp
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"time"
@@ -140,7 +141,8 @@ func (znp *Znp) ProcessRequest(commandType unpi.CommandType, subsystem unpi.Subs
 			znp.outbound <- outgoing
 			select {
 			case frame := <-outgoing.syncRsp:
-				deserialize(frame.Payload, response)
+				buf := bytes.NewBuffer(frame.Payload)
+				deserialize(buf, response)
 			case err = <-outgoing.syncErr:
 			}
 		} else {

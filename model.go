@@ -3,25 +3,25 @@ package znp
 type Network struct {
 	NeighborPanID   uint16
 	LogicalChannel  uint8
-	StackProfile    uint8
-	ZigbeeVersion   uint8
-	BeaconOrder     uint8
-	SuperFrameOrder uint8
+	StackProfile    uint8 `bitmask:"start" bits:"0b00001111"`
+	ZigbeeVersion   uint8 `bitmask:"end" bits:"0b11110000"`
+	BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
+	SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
 	PermitJoin      uint8
 }
 
 //Capabilities represents the interfaces that this device can handle (compiled into the device)
 type Capabilities struct {
-	Sys   uint8
-	Mac   uint8
-	Nwk   uint8
-	Af    uint8
-	Zdo   uint8
-	Sapi  uint8
-	Util  uint8
-	Debug uint8
-	App   uint8
-	Zoad  uint8
+	Sys   uint16 `bitmask:"start" bits:"0x0001"`
+	Mac   uint16 `bits:"0x0002"`
+	Nwk   uint16 `bits:"0x0004"`
+	Af    uint16 `bits:"0x0008"`
+	Zdo   uint16 `bits:"0x0010"`
+	Sapi  uint16 `bits:"0x0020"`
+	Util  uint16 `bits:"0x0040"`
+	Debug uint16 `bits:"0x0080"`
+	App   uint16 `bits:"0x0100"`
+	Zoad  uint16 `bitmask:"end" bits:"0x1000"`
 }
 
 //ResetRequest is sent by the tester to reset the target device
