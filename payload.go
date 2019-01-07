@@ -87,6 +87,22 @@ func serialize(request interface{}) []byte {
 				write(buf, endianness, v)
 			}
 		}
+		var writeString = func(v string) {
+			switch hex {
+			case "uint64":
+				addr, _ := strconv.ParseUint(v[2:], 16, 64)
+				write(buf, endianness, addr)
+			case "uint32":
+				addr, _ := strconv.ParseUint(v[2:], 16, 32)
+				write(buf, endianness, uint32(addr))
+			case "uint16":
+				addr, _ := strconv.ParseUint(v[2:], 16, 16)
+				write(buf, endianness, uint16(addr))
+			case "uint8":
+				addr, _ := strconv.ParseUint(v[2:], 16, 8)
+				write(buf, endianness, uint8(addr))
+			}
+		}
 		switch value := valueMirror.Interface().(type) {
 		case uint8:
 			if !processBitmask(value) {
@@ -105,19 +121,10 @@ func serialize(request interface{}) []byte {
 				write(buf, endianness, value)
 			}
 		case string:
-			switch hex {
-			case "uint64":
-				addr, _ := strconv.ParseUint(value[2:], 16, 64)
-				write(buf, endianness, addr)
-			case "uint32":
-				addr, _ := strconv.ParseUint(value[2:], 16, 32)
-				write(buf, endianness, uint32(addr))
-			case "uint16":
-				addr, _ := strconv.ParseUint(value[2:], 16, 16)
-				write(buf, endianness, uint16(addr))
-			case "uint8":
-				addr, _ := strconv.ParseUint(value[2:], 16, 8)
-				write(buf, endianness, uint8(addr))
+			writeString(value)
+		case []string:
+			for _, v := range value {
+				writeString(v)
 			}
 		default:
 			switch {
@@ -195,25 +202,41 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 				dynBufLen = v
 			}
 		}
-		switch valueMirror.Interface().(type) {
-		case string:
+		var readString = func() string {
 			switch hex {
 			case "uint64":
 				var v uint64
 				read(buf, endianness, &v)
-				valueMirror.SetString(fmt.Sprintf("0x%016x", v))
+				return fmt.Sprintf("0x%016x", v)
 			case "uint32":
 				var v uint32
 				read(buf, endianness, &v)
-				valueMirror.SetString(fmt.Sprintf("0x%08x", v))
+				return fmt.Sprintf("0x%08x", v)
 			case "uint16":
 				var v uint16
 				read(buf, endianness, &v)
-				valueMirror.SetString(fmt.Sprintf("0x%04x", v))
+				return fmt.Sprintf("0x%04x", v)
 			case "uint8":
 				var v uint8
 				read(buf, endianness, &v)
-				valueMirror.SetString(fmt.Sprintf("0x%02x", v))
+				return fmt.Sprintf("0x%02x", v)
+			default:
+				log.Fatalf("Unsupported hex format: %s", hex)
+			}
+			return ""
+		}
+		switch valueMirror.Interface().(type) {
+		case string:
+			hexString := readString()
+			valueMirror.SetString(hexString)
+		case []string:
+			if valueMirror.CanSet() {
+				valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
+				for i := 0; i < int(dynBufLen); i++ {
+					sliceElemMirror := valueMirror.Index(i)
+					hexString := readString()
+					sliceElemMirror.SetString(hexString)
+				}
 			}
 		case uint8:
 			var v uint8

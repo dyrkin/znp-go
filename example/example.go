@@ -64,4 +64,10 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v\n", getextAddr)
+
+	afData, err := z.AfDataRequest("0x0F0F", 1, 2, 3, 5, &znp.AfDataRequestOptions{}, 1, []byte{1, 2})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", afData)
 }
