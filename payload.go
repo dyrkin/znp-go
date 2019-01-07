@@ -46,11 +46,11 @@ func serialize(request interface{}) []byte {
 		if bitmask != "" {
 			bitmaskStarted = bitmask == "start"
 			bitmaskStopped = !bitmaskStarted
-		}
-		var processBitmask = func(v interface{}) bool {
 			if bitmaskStarted {
 				bitmaskBytes = 0
 			}
+		}
+		var processBitmask = func(v interface{}) bool {
 			if bitmaskStarted || bitmaskStopped {
 				bits := tagMirror.Get("bits")
 				if bits == "" && bitmaskStarted {
@@ -120,13 +120,14 @@ func serialize(request interface{}) []byte {
 				write(buf, endianness, uint8(addr))
 			}
 		default:
-			if valueMirror.Kind() == reflect.Ptr {
+			switch {
+			case valueMirror.Kind() == reflect.Ptr:
 				write(buf, endianness, serialize(value))
-			} else if valueMirror.Kind() == reflect.Slice && valueMirror.Len() > 0 && valueMirror.Index(0).Kind() == reflect.Ptr {
+			case valueMirror.Kind() == reflect.Slice && valueMirror.Len() > 0 && valueMirror.Index(0).Kind() == reflect.Ptr:
 				for i := 0; i < valueMirror.Len(); i++ {
 					write(buf, endianness, serialize(valueMirror.Index(i).Interface()))
 				}
-			} else {
+			default:
 				write(buf, endianness, value)
 			}
 		}
@@ -275,27 +276,31 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 			read(buf, endianness, v)
 			valueMirror.Set(reflect.ValueOf(v))
 		default:
-			if valueMirror.IsNil() {
-				switch valueMirror.Kind() {
-				case reflect.Ptr:
-					el := reflect.New(valueMirror.Type().Elem())
-					v := el.Interface()
-					if valueMirror.CanSet() {
-						valueMirror.Set(el)
+			switch valueMirror.Kind() {
+			case reflect.Ptr:
+				el := reflect.New(valueMirror.Type().Elem())
+				v := el.Interface()
+				if valueMirror.CanSet() {
+					valueMirror.Set(el)
+				}
+				deserialize(buf, v)
+			case reflect.Slice:
+				if valueMirror.CanSet() {
+					valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
+					for i := 0; i < int(dynBufLen); i++ {
+						sliceElemMirror := valueMirror.Index(i)
+						el := reflect.New(sliceElemMirror.Type().Elem())
+						v := el.Interface()
+						deserialize(buf, v)
+						sliceElemMirror.Set(reflect.ValueOf(v))
 					}
-					deserialize(buf, v)
-					valueMirror.Set(reflect.ValueOf(v))
-				case reflect.Slice:
-					if valueMirror.CanSet() {
-						valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
-						for i := 0; i < int(dynBufLen); i++ {
-							sliceElemMirror := valueMirror.Index(i)
-							el := reflect.New(sliceElemMirror.Type().Elem())
-							v := el.Interface()
-							deserialize(buf, v)
-							sliceElemMirror.Set(reflect.ValueOf(v))
-						}
-					}
+				}
+			default:
+				el := reflect.New(valueMirror.Type())
+				v := el.Interface()
+				read(buf, endianness, v)
+				if valueMirror.CanSet() {
+					valueMirror.Set(reflect.ValueOf(v).Elem())
 				}
 			}
 		}

@@ -1,27 +1,21 @@
 package znp
 
-type Network struct {
-	NeighborPanID   uint16
-	LogicalChannel  uint8
-	StackProfile    uint8 `bitmask:"start" bits:"0b00001111"`
-	ZigbeeVersion   uint8 `bitmask:"end" bits:"0b11110000"`
-	BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
-	SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
-	PermitJoin      uint8
-}
+type LatencyReq uint8
 
-//Capabilities represents the interfaces that this device can handle (compiled into the device)
-type Capabilities struct {
-	Sys   uint16 `bitmask:"start" bits:"0x0001"`
-	Mac   uint16 `bits:"0x0002"`
-	Nwk   uint16 `bits:"0x0004"`
-	Af    uint16 `bits:"0x0008"`
-	Zdo   uint16 `bits:"0x0010"`
-	Sapi  uint16 `bits:"0x0020"`
-	Util  uint16 `bits:"0x0040"`
-	Debug uint16 `bits:"0x0080"`
-	App   uint16 `bits:"0x0100"`
-	Zoad  uint16 `bitmask:"end" bits:"0x1000"`
+const (
+	NoLatency LatencyReq = iota
+	FastBeacons
+	SlowBeacons
+)
+
+type RegisterRequest struct {
+	EndPoint          uint8
+	AppProfID         uint16
+	AppDeviceID       uint16
+	AddDevVer         uint8
+	LatencyReq        LatencyReq
+	AppInClusterList  []uint16 `len:"uint8"`
+	AppOutClusterList []uint16 `len:"uint8"`
 }
 
 //ResetRequest is sent by the tester to reset the target device
@@ -85,4 +79,28 @@ type RamWriteRequest struct {
 type LedControlRequest struct {
 	LedID uint8
 	Mode  uint8
+}
+
+type Network struct {
+	NeighborPanID   uint16
+	LogicalChannel  uint8
+	StackProfile    uint8 `bitmask:"start" bits:"0b00001111"`
+	ZigbeeVersion   uint8 `bitmask:"end" bits:"0b11110000"`
+	BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
+	SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
+	PermitJoin      uint8
+}
+
+//Capabilities represents the interfaces that this device can handle (compiled into the device)
+type Capabilities struct {
+	Sys   uint16 `bitmask:"start" bits:"0x0001"`
+	Mac   uint16 `bits:"0x0002"`
+	Nwk   uint16 `bits:"0x0004"`
+	Af    uint16 `bits:"0x0008"`
+	Zdo   uint16 `bits:"0x0010"`
+	Sapi  uint16 `bits:"0x0020"`
+	Util  uint16 `bits:"0x0040"`
+	Debug uint16 `bits:"0x0080"`
+	App   uint16 `bits:"0x0100"`
+	Zoad  uint16 `bitmask:"end" bits:"0x1000"`
 }
