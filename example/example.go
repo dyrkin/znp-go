@@ -64,10 +64,4 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v\n", getextAddr)
-
-	afData, err := z.AfDataRetrieve(1, 10000, 3)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%+v\n", afData)
 }
