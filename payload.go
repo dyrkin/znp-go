@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/dyrkin/znp-go/util"
 )
 
 func order(endianness string) binary.ByteOrder {
@@ -56,16 +57,11 @@ func serialize(request interface{}) []byte {
 				if bits == "" && bitmaskStarted {
 					log.Fatalf("Bitmask is started but bits tag is not defined")
 				}
-				var bitmaskBits uint64
-				if strings.HasPrefix(bits, "0x") {
-					bitmaskBits, _ = strconv.ParseUint(bits[2:], 16, len(bits[2:])*4)
-				} else if strings.HasPrefix(bits, "0b") {
-					bitmaskBits, _ = strconv.ParseUint(bits[2:], 2, len(bits[2:]))
-				}
-				pos := getFirstSetBitPos(bitmaskBits)
-				bitmaskBytes = bitmaskBytes | ((toUint64(v) << pos) & bitmaskBits)
+				bitmaskBits := bitmaskBits(bits)
+				pos := util.FirstBitPosition(bitmaskBits)
+				bitmaskBytes = bitmaskBytes | ((util.Uint64(v) << pos) & bitmaskBits)
 				if !bitmaskStarted && bitmaskStopped {
-					write(buf, endianness, toVtype(v, bitmaskBytes))
+					write(buf, endianness, util.Vtype(v, bitmaskBytes))
 				}
 
 				bitmaskStopped = false
@@ -164,21 +160,16 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 		var processBitmask = func(v interface{}) bool {
 			if bitmaskStartedNow {
 				read(buf, endianness, v)
-				bitmaskBytes = toUint64(v)
+				bitmaskBytes = util.Uint64(v)
 			}
 			if bitmaskStarted || bitmaskStopped {
 				bits := tagMirror.Get("bits")
 				if bits == "" && bitmaskStarted {
 					log.Fatalf("Bitmask is started but bits tag is not defined")
 				}
-				var bitmaskBits uint64
-				if strings.HasPrefix(bits, "0x") {
-					bitmaskBits, _ = strconv.ParseUint(bits[2:], 16, len(bits[2:])*4)
-				} else if strings.HasPrefix(bits, "0b") {
-					bitmaskBits, _ = strconv.ParseUint(bits[2:], 2, len(bits[2:]))
-				}
-				pos := getFirstSetBitPos(bitmaskBits)
-				v := toVtype(v, bitmaskBytes&bitmaskBits>>pos)
+				bitmaskBits := bitmaskBits(bits)
+				pos := util.FirstBitPosition(bitmaskBits)
+				v := util.Vtype(v, bitmaskBytes&bitmaskBits>>pos)
 				valueMirror.Set(reflect.ValueOf(v))
 				bitmaskStopped = false
 				return true
@@ -330,43 +321,12 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 	}
 }
 
-func getFirstSetBitPos(n uint64) uint8 {
-	return uint8(math.Log2(float64(n & -n)))
-}
-
-func toUint64(v interface{}) uint64 {
-	switch z := v.(type) {
-	case *uint8:
-		return uint64(*z)
-	case *uint16:
-		return uint64(*z)
-	case *uint32:
-		return uint64(*z)
-	case *uint64:
-		return uint64(*z)
-	case uint8:
-		return uint64(z)
-	case uint16:
-		return uint64(z)
-	case uint32:
-		return uint64(z)
-	case uint64:
-		return uint64(z)
+func bitmaskBits(value string) uint64 {
+	var bitmaskBits uint64
+	if strings.HasPrefix(value, "0x") {
+		bitmaskBits, _ = strconv.ParseUint(value[2:], 16, len(value[2:])*4)
+	} else if strings.HasPrefix(value, "0b") {
+		bitmaskBits, _ = strconv.ParseUint(value[2:], 2, len(value[2:]))
 	}
-	return 0
-}
-
-func toVtype(v interface{}, val uint64) interface{} {
-	switch v.(type) {
-	case *uint8, uint8:
-		return uint8(val)
-	case *uint16, uint16:
-		return uint16(val)
-	case *uint32, uint32:
-		return uint32(val)
-	case *uint64, uint64:
-		return uint64(val)
-	}
-	log.Fatalf("Unknown value: %v", v)
-	return 0
+	return bitmaskBits
 }
