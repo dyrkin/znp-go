@@ -17,6 +17,24 @@ const (
 	Failure
 )
 
+type InterPanCtlStatus uint8
+
+const (
+	InterPanCtlSuccess InterPanCtlStatus = iota
+	InterPanCtlFailure
+	InterPanCtlInvalidParameter
+	InterPanCtlZApsNotAllowed = 0xBA
+)
+
+type DataStatus uint8
+
+const (
+	DataSuccess DataStatus = iota
+	DataFailure
+	DataInvalidParameter
+	DataMemFail = 0x10
+)
+
 type AddrMode uint8
 
 const (
@@ -27,13 +45,30 @@ const (
 	AddrBroadcast = 15
 )
 
+type InterPanCommand uint8
+
+const (
+	InterPanClr InterPanCommand = iota
+	InterPanSet
+	InterPanReg
+	InterPanChk
+)
+
 type StatusResponse struct {
 	Status Status
 }
 
+type InterPanCtlStatusResponse struct {
+	Status InterPanCtlStatus
+}
+
+type DataStatusResponse struct {
+	Status DataStatus
+}
+
 // =======AF=======
 
-type AfRegisterRequest struct {
+type AfRegister struct {
 	EndPoint          uint8
 	AppProfID         uint16
 	AppDeviceID       uint16
@@ -45,7 +80,7 @@ type AfRegisterRequest struct {
 
 func (znp *Znp) AfRegister(endPoint uint8, appProfID uint16, appDeviceID uint16, addDevVer uint8,
 	latencyReq LatencyReq, appInClusterList []uint16, appOutClusterList []uint16) (*StatusResponse, error) {
-	req := &AfRegisterRequest{EndPoint: endPoint, AppProfID: appProfID, AppDeviceID: appDeviceID,
+	req := &AfRegister{EndPoint: endPoint, AppProfID: appProfID, AppDeviceID: appDeviceID,
 		AddDevVer: addDevVer, LatencyReq: latencyReq, AppInClusterList: appInClusterList, AppOutClusterList: appOutClusterList}
 	rsp := &StatusResponse{}
 	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0, req, rsp)
@@ -67,8 +102,8 @@ type AfDataRequest struct {
 	DstAddr     string `hex:"uint16"`
 	DstEndpoint uint8
 	SrcEndpoint uint8
-	ClusterId   uint16
-	TransId     uint8
+	ClusterID   uint16
+	TransID     uint8
 	Options     *AfDataRequestOptions
 	Radius      uint8
 	Data        []uint8 `len:"uint8"`
@@ -77,9 +112,9 @@ type AfDataRequest struct {
 func (znp *Znp) AfDataRequest(dstAddr string, dstEndpoint uint8, srcEndpoint uint8, clusterId uint16,
 	transId uint8, options *AfDataRequestOptions, radius uint8, data []uint8) (*StatusResponse, error) {
 	req := &AfDataRequest{DstAddr: dstAddr, DstEndpoint: dstEndpoint, SrcEndpoint: srcEndpoint,
-		ClusterId: clusterId, TransId: transId, Options: options, Radius: radius, Data: data}
+		ClusterID: clusterId, TransID: transId, Options: options, Radius: radius, Data: data}
 	rsp := &StatusResponse{}
-	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 1, req, rsp)
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x01, req, rsp)
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +125,10 @@ type AfDataRequestExt struct {
 	DstAddrMode AddrMode
 	DstAddr     string `hex:"uint64"`
 	DstEndpoint uint8
-	DstPanId    uint16
+	DstPanID    uint16
 	SrcEndpoint uint8
-	ClusterId   uint16
-	TransId     uint8
+	ClusterID   uint16
+	TransID     uint8
 	Options     *AfDataRequestOptions
 	Radius      uint8
 	Data        []uint8 `len:"uint16"`
@@ -101,10 +136,118 @@ type AfDataRequestExt struct {
 
 func (znp *Znp) AfDataRequestExt(dstAddrMode AddrMode, dstAddr string, dstEndpoint uint8, dstPanId uint16, srcEndpoint uint8, clusterId uint16,
 	transId uint8, options *AfDataRequestOptions, radius uint8, data []uint8) (*StatusResponse, error) {
-	req := &AfDataRequestExt{DstAddrMode: dstAddrMode, DstAddr: dstAddr, DstEndpoint: dstEndpoint, DstPanId: dstPanId, SrcEndpoint: srcEndpoint,
-		ClusterId: clusterId, TransId: transId, Options: options, Radius: radius, Data: data}
+	req := &AfDataRequestExt{DstAddrMode: dstAddrMode, DstAddr: dstAddr, DstEndpoint: dstEndpoint, DstPanID: dstPanId, SrcEndpoint: srcEndpoint,
+		ClusterID: clusterId, TransID: transId, Options: options, Radius: radius, Data: data}
 	rsp := &StatusResponse{}
-	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 2, req, rsp)
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x02, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type AfDataRequestSrcRtgOptions struct {
+	APSAck      uint8 `bits:"0b00000001" bitmask:"start`
+	APSSecurity uint8 `bits:"0b00000100"`
+	SkipRouting uint8 `bits:"0b00001000" bitmask:"end" `
+}
+
+type AfDataRequestSrcRtg struct {
+	DstAddr     string `hex:"uint16"`
+	DstEndpoint uint8
+	SrcEndpoint uint8
+	ClusterID   uint16
+	TransID     uint8
+	Options     *AfDataRequestSrcRtgOptions
+	Radius      uint8
+	RelayList   []string `len:"uint8" hex:"uint16"`
+	Data        []uint8  `len:"uint8"`
+}
+
+func (znp *Znp) AfDataRequestSrcRtg(dstAddr string, dstEndpoint uint8, srcEndpoint uint8, clusterId uint16,
+	transId uint8, options *AfDataRequestSrcRtgOptions, radius uint8, relayList []string, data []uint8) (*StatusResponse, error) {
+	req := &AfDataRequestSrcRtg{DstAddr: dstAddr, DstEndpoint: dstEndpoint, SrcEndpoint: srcEndpoint,
+		ClusterID: clusterId, TransID: transId, Options: options, Radius: radius, RelayList: relayList, Data: data}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x03, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type AfInterPanCtlData interface {
+	AfInterPanCtlData()
+}
+
+type AfInterPanClrData struct{}
+
+func (a *AfInterPanClrData) AfInterPanCtlData() {}
+
+type AfInterPanSetData struct {
+	Channel uint8
+}
+
+func (a *AfInterPanSetData) AfInterPanCtlData() {}
+
+type AfInterPanRegData struct {
+	Endpoint uint8
+}
+
+func (a *AfInterPanRegData) AfInterPanCtlData() {}
+
+type AfInterPanChkData struct {
+	PanID    uint16
+	Endpoint uint8
+}
+
+func (a *AfInterPanChkData) AfInterPanCtlData() {}
+
+type AfInterPanCtl struct {
+	Command InterPanCommand
+	Data    AfInterPanCtlData
+}
+
+func (znp *Znp) AfInterPanCtl(command InterPanCommand, data AfInterPanCtlData) (*InterPanCtlStatusResponse, error) {
+	req := &AfInterPanCtl{Command: command, Data: data}
+	rsp := &InterPanCtlStatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x10, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type AfDataStore struct {
+	Index uint16
+	Data  []uint8 `len:"uint8"`
+}
+
+func (znp *Znp) AfDataStore(index uint16, data []uint8) (*DataStatusResponse, error) {
+	req := &AfDataStore{Index: index, Data: data}
+	rsp := &DataStatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x11, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type AfDataRetrieve struct {
+	Timestamp uint32
+	Index     uint16
+	Length    uint8
+}
+
+type AfDataRetrieveResponse struct {
+	Status DataStatus
+	Data   []uint8 `len:"uint8"`
+}
+
+func (znp *Znp) AfDataRetrieve(timestamp uint32, index uint16, length uint8) (*AfDataRetrieveResponse, error) {
+	req := &AfDataRetrieve{Timestamp: timestamp, Index: index, Length: length}
+	rsp := &AfDataRetrieveResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x12, req, rsp)
 	if err != nil {
 		return nil, err
 	}
