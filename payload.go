@@ -84,19 +84,23 @@ func serialize(request interface{}) []byte {
 			}
 		}
 		var writeString = func(v string) {
-			switch hex {
-			case "uint64":
-				addr, _ := strconv.ParseUint(v[2:], 16, 64)
-				write(buf, endianness, addr)
-			case "uint32":
-				addr, _ := strconv.ParseUint(v[2:], 16, 32)
-				write(buf, endianness, uint32(addr))
-			case "uint16":
-				addr, _ := strconv.ParseUint(v[2:], 16, 16)
-				write(buf, endianness, uint16(addr))
-			case "uint8":
-				addr, _ := strconv.ParseUint(v[2:], 16, 8)
-				write(buf, endianness, uint8(addr))
+			if hex != "" {
+				switch hex {
+				case "uint64":
+					addr, _ := strconv.ParseUint(v[2:], 16, 64)
+					write(buf, endianness, addr)
+				case "uint32":
+					addr, _ := strconv.ParseUint(v[2:], 16, 32)
+					write(buf, endianness, uint32(addr))
+				case "uint16":
+					addr, _ := strconv.ParseUint(v[2:], 16, 16)
+					write(buf, endianness, uint16(addr))
+				case "uint8":
+					addr, _ := strconv.ParseUint(v[2:], 16, 8)
+					write(buf, endianness, uint8(addr))
+				}
+			} else {
+				write(buf, endianness, []uint8(v))
 			}
 		}
 		switch value := valueMirror.Interface().(type) {
@@ -193,7 +197,7 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 				dynBufLen = v
 			}
 		}
-		var readString = func() string {
+		var readHexString = func() string {
 			switch hex {
 			case "uint64":
 				var v uint64
@@ -218,14 +222,19 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 		}
 		switch valueMirror.Interface().(type) {
 		case string:
-			hexString := readString()
-			valueMirror.SetString(hexString)
+			if hex != "" {
+				valueMirror.SetString(readHexString())
+			} else {
+				b := make([]uint8, dynBufLen, dynBufLen)
+				read(buf, endianness, b)
+				valueMirror.SetString(string(b))
+			}
 		case []string:
 			if valueMirror.CanSet() {
 				valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
 				for i := 0; i < int(dynBufLen); i++ {
 					sliceElemMirror := valueMirror.Index(i)
-					hexString := readString()
+					hexString := readHexString()
 					sliceElemMirror.SetString(hexString)
 				}
 			}

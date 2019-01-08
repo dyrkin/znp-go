@@ -89,6 +89,7 @@ func (s *MySuite) TestDeserialize(c *C) {
 		F12 [2]uint16
 		F13 []*Network `len:"uint8"`
 		F14 []string   `len:"uint8" hex:"uint16"`
+		F15 string     `len:"uint8"`
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F11: "0x00124b00019c2ee9", F12: [2]uint16{4, 5},
 		F13: []*Network{&Network{
@@ -101,6 +102,7 @@ func (s *MySuite) TestDeserialize(c *C) {
 			PermitJoin:      100,
 		}},
 		F14: []string{"0xffaa", "0xaaff"},
+		F15: "hello world",
 	}
 	res := &Test{}
 	payload := []byte{0x1, 0x0, 0x2, 0x2, 0x0, 0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -117,7 +119,7 @@ func (s *MySuite) TestDeserialize(c *C) {
 		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xe9, 0x2e, 0x9c,
 		0x1, 0x0, 0x4b, 0x12, 0x0, 0x4, 0x0, 0x5, 0x0, 0x1, 0xf4, 0x1, 0x2, 0x43, 0x65, 0x64, 0x02,
-		0xaa, 0xff, 0xff, 0xaa}
+		0xaa, 0xff, 0xff, 0xaa, 0x0b, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64}
 	deserialize(bytes.NewBuffer(payload), res)
 
 	c.Assert(res, DeepEquals, test)
@@ -141,6 +143,7 @@ func (s *MySuite) TestSerializeDeserialize(c *C) {
 		F13 []*Network `len:"uint8"`
 		F14 *Capabilities
 		F15 string `hex:"uint32"` // string '0x00124b00'
+		F16 string `len:"uint8"`
 	}
 	networks := []*Network{
 		&Network{
@@ -164,7 +167,8 @@ func (s *MySuite) TestSerializeDeserialize(c *C) {
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F10: "0x00124b00019c2ee9",
 		F11: []uint16{4, 5}, F12: []byte{1, 2, 3},
-		F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}, F15: "0x00124b00"}
+		F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}, F15: "0x00124b00",
+		F16: "hello world"}
 	payload := serialize(test)
 	res := &Test{}
 	deserialize(bytes.NewBuffer(payload), res)

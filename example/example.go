@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	unpi "github.com/dyrkin/unpi-go"
 	znp "github.com/dyrkin/znp-go"
@@ -22,46 +23,77 @@ func main() {
 
 	u := unpi.New(1, port)
 	z := znp.New(u)
+	z.LogFrames(false)
 	go func() {
 		for {
 			select {
 			case err := <-z.Errors:
-				fmt.Printf("Error: %s", err)
+				fmt.Printf("Error: %s\n", err)
 			case async := <-z.AsyncInbound:
-				fmt.Printf("Async: %v", async)
+				fmt.Printf("Async: %v\n", async)
+			case frame := <-z.FramesLog:
+				fmt.Printf("Frame received: %v\n", frame)
 			}
 		}
 	}()
 
-	// z.Reset(0)
+	// z.Reset(1)
 
-	ping, err := z.Ping()
+	var res interface{}
+
+	res, err = z.Ping()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%s\n", ping)
+	fmt.Printf("%s\n", res)
 
-	version, err := z.Version()
+	res, err = z.Version()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", version)
+	fmt.Printf("%+v\n", res)
 
-	enabledLed, err := z.LedControl(1, 0)
+	res, err = z.SetExtAddr("0x00124b00019c2ee9")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", enabledLed)
+	fmt.Printf("%+v\n", res)
 
-	setextAddr, err := z.SetExtAddr("0x00124b00019c2ee9")
+	res, err = z.GetExtAddr()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", setextAddr)
+	fmt.Printf("%+v\n", res)
 
-	getextAddr, err := z.GetExtAddr()
+	res, err = z.SapiZbStartRequest()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", getextAddr)
+	fmt.Printf("%+v\n", res)
+
+	res, err = z.SapiZbPermitJoiningRequest("0xFF00", 50)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", res)
+
+	res, err = z.LedControl(1, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", res)
+
+	res, err = z.SapiZbReadConfiguration(1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", res)
+
+	res, err = z.SapiZbFindDeviceRequest("0x00124b00019c2ee9")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", res)
+
+	time.Sleep(200 * time.Second)
 }

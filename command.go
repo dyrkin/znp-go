@@ -2,6 +2,8 @@ package znp
 
 import unpi "github.com/dyrkin/unpi-go"
 
+var AsyncCommandRegistry = make(map[registryKey]interface{})
+
 type LatencyReq uint8
 
 const (
@@ -15,24 +17,51 @@ type Status uint8
 const (
 	Success Status = iota
 	Failure
-)
-
-type InterPanCtlStatus uint8
-
-const (
-	InterPanCtlSuccess InterPanCtlStatus = iota
-	InterPanCtlFailure
-	InterPanCtlInvalidParameter
-	InterPanCtlZApsNotAllowed = 0xBA
-)
-
-type DataStatus uint8
-
-const (
-	DataSuccess DataStatus = iota
-	DataFailure
-	DataInvalidParameter
-	DataMemFail = 0x10
+	InvalidParameter
+	MemError Status = iota + 0x10
+	BufferFull
+	UnsupportedMode
+	MacMemError
+	SapiInProgress Status = iota + 0x20
+	SapiTimeout
+	SapiInit
+	NotAuthorized          = 0x7E
+	MalformedCmd           = 0x80
+	UnsupClusterCmd        = 0x81
+	OtaAbort        Status = iota + 0x95
+	OtaImageInvalid
+	OtaWaitForData
+	OtaNoImageAvailable
+	OtaRequireMoreImage
+	ApsFail Status = iota + 0xb1
+	ApsTableFull
+	ApsIllegalRequest
+	ApsInvalidBinding
+	ApsUnsupportedAttrib
+	ApsNotSupported
+	ApsNoAck
+	ApsDuplicateEntry
+	ApsNoBoundDevice
+	ApsNotAllowed
+	ApsNotAuthenticated
+	SecNoKey Status = iota + 0xa1
+	SecOldFrmCount
+	SecMaxFrmCount
+	SecCcmFail
+	SecFailure             = 0xad
+	NwkInvalidParam Status = iota + 0xc1
+	NwkInvalidRequest
+	NwkNotPermitted
+	NwkStartupFailure
+	NwkAlreadyPresent
+	NwkSyncFailure
+	NwkTableFull
+	NwkUnknownDevice
+	NwkUnsupportedAttribute
+	NwkNoNetworks
+	NwkLeaveUnconfirmed
+	NwkNoAck
+	NwkNoRoute
 )
 
 type AddrMode uint8
@@ -56,14 +85,6 @@ const (
 
 type StatusResponse struct {
 	Status Status
-}
-
-type InterPanCtlStatusResponse struct {
-	Status InterPanCtlStatus
-}
-
-type DataStatusResponse struct {
-	Status DataStatus
 }
 
 // =======AF=======
@@ -125,7 +146,7 @@ type AfDataRequestExt struct {
 	DstAddrMode AddrMode
 	DstAddr     string `hex:"uint64"`
 	DstEndpoint uint8
-	DstPanID    uint16
+	DstPanID    uint16 //PAN - personal area networks
 	SrcEndpoint uint8
 	ClusterID   uint16
 	TransID     uint8
@@ -134,8 +155,9 @@ type AfDataRequestExt struct {
 	Data        []uint8 `len:"uint16"`
 }
 
-func (znp *Znp) AfDataRequestExt(dstAddrMode AddrMode, dstAddr string, dstEndpoint uint8, dstPanId uint16, srcEndpoint uint8, clusterId uint16,
-	transId uint8, options *AfDataRequestOptions, radius uint8, data []uint8) (*StatusResponse, error) {
+func (znp *Znp) AfDataRequestExt(dstAddrMode AddrMode, dstAddr string, dstEndpoint uint8, dstPanId uint16,
+	srcEndpoint uint8, clusterId uint16, transId uint8, options *AfDataRequestOptions, radius uint8,
+	data []uint8) (*StatusResponse, error) {
 	req := &AfDataRequestExt{DstAddrMode: dstAddrMode, DstAddr: dstAddr, DstEndpoint: dstEndpoint, DstPanID: dstPanId, SrcEndpoint: srcEndpoint,
 		ClusterID: clusterId, TransID: transId, Options: options, Radius: radius, Data: data}
 	rsp := &StatusResponse{}
@@ -208,9 +230,9 @@ type AfInterPanCtl struct {
 	Data    AfInterPanCtlData
 }
 
-func (znp *Znp) AfInterPanCtl(command InterPanCommand, data AfInterPanCtlData) (*InterPanCtlStatusResponse, error) {
+func (znp *Znp) AfInterPanCtl(command InterPanCommand, data AfInterPanCtlData) (*StatusResponse, error) {
 	req := &AfInterPanCtl{Command: command, Data: data}
-	rsp := &InterPanCtlStatusResponse{}
+	rsp := &StatusResponse{}
 	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x10, req, rsp)
 	if err != nil {
 		return nil, err
@@ -223,9 +245,9 @@ type AfDataStore struct {
 	Data  []uint8 `len:"uint8"`
 }
 
-func (znp *Znp) AfDataStore(index uint16, data []uint8) (*DataStatusResponse, error) {
+func (znp *Znp) AfDataStore(index uint16, data []uint8) (*StatusResponse, error) {
 	req := &AfDataStore{Index: index, Data: data}
-	rsp := &DataStatusResponse{}
+	rsp := &StatusResponse{}
 	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x11, req, rsp)
 	if err != nil {
 		return nil, err
@@ -240,7 +262,7 @@ type AfDataRetrieve struct {
 }
 
 type AfDataRetrieveResponse struct {
-	Status DataStatus
+	Status StatusResponse
 	Data   []uint8 `len:"uint8"`
 }
 
@@ -252,6 +274,347 @@ func (znp *Znp) AfDataRetrieve(timestamp uint32, index uint16, length uint8) (*A
 		return nil, err
 	}
 	return rsp, nil
+}
+
+type AfApsfConfigSet struct {
+	Endpoint   uint8
+	FrameDelay uint8
+	WindowSize uint8
+}
+
+func (znp *Znp) AfApsfConfigSet(endpoint uint8, frameDelay uint8, windowSize uint8) (*StatusResponse, error) {
+	req := &AfApsfConfigSet{Endpoint: endpoint, FrameDelay: frameDelay, WindowSize: windowSize}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x13, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type AfDataConfirm struct {
+	Status   Status
+	Endpoint uint8
+	TransID  uint8
+}
+
+type AfReflectError struct {
+	Status      Status
+	Endpoint    uint8
+	TransID     uint8
+	DstAddrMode AddrMode
+	DstAddr     string `hex:"uint16"`
+}
+
+type AfIncomingMessage struct {
+	GroupID        uint16
+	ClusterID      uint16
+	SrcAddr        string `hex:"uint16"`
+	SrcEndpoint    uint8
+	DstEndpoint    uint8
+	WasBroadcast   uint8
+	LinkQuality    uint8
+	SecurityUse    uint8
+	Timestamp      uint32
+	TransSeqNumber uint8
+	Data           []uint8 `len:"uint8"`
+}
+
+type AfIncomingMessageExt struct {
+	GroupID        uint16
+	ClusterID      uint16
+	SrcAddrMode    AddrMode
+	SrcAddr        string `hex:"uint64"`
+	SrcEndpoint    uint8
+	SrcPanID       uint16
+	DstEndpoint    uint8
+	WasBroadcast   uint8
+	LinkQuality    uint8
+	SecurityUse    uint8
+	Timestamp      uint32
+	TransSeqNumber uint8
+	Data           []uint8 `len:"uint16"`
+}
+
+// =======APP=======
+
+type AppMsg struct {
+	AppEndpoint uint8
+	DstAddr     string `hex:"uint16"`
+	DstEndpoint uint8
+	ClusterID   uint16
+	Message     []uint8 `len:"uint8"`
+}
+
+func (znp *Znp) AppMsg(appEndpoint uint8, dstAddr string, dstEndpoint uint8, clusterID uint16,
+	message []uint8) (*StatusResponse, error) {
+	req := &AppMsg{AppEndpoint: appEndpoint, DstAddr: dstAddr, DstEndpoint: dstEndpoint,
+		ClusterID: clusterID, Message: message}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x00, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type AppUserTest struct {
+	SrcEndpoint uint8
+	CommandID   uint16
+	Parameter1  uint16
+	Parameter2  uint16
+}
+
+func (znp *Znp) AppUserTest(srcEndpoint uint8, commandId uint16, parameter1 uint16, parameter2 uint16) (*StatusResponse, error) {
+	req := &AppUserTest{SrcEndpoint: srcEndpoint, CommandID: commandId, Parameter1: parameter1, Parameter2: parameter2}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x01, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+// =======DEBUG=======
+
+type DebugSetThreshold struct {
+	ComponentID uint8
+	Threshold   uint8
+}
+
+func (znp *Znp) DebugSetThreshold(componentId uint8, threshold uint8) (*StatusResponse, error) {
+	req := &DebugSetThreshold{ComponentID: componentId, Threshold: threshold}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_DEBUG, 0x00, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type DebugMsg struct {
+	String string `len:"uint8"`
+}
+
+func (znp *Znp) DebugMsg(str string) error {
+	req := &DebugMsg{String: str}
+	return znp.ProcessRequest(unpi.C_AREQ, unpi.S_DEBUG, 0x00, req, nil)
+}
+
+// =======MAC======= is not supported on my device
+
+func (znp *Znp) MacInit() (*StatusResponse, error) {
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_MAC, 0x02, nil, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+// =======SAPI=======
+
+func (znp *Znp) SapiZbSystemReset() error {
+	return znp.ProcessRequest(unpi.C_AREQ, unpi.S_SAPI, 0x09, nil, nil)
+}
+
+type EmptyResponse struct{}
+
+func (znp *Znp) SapiZbStartRequest() (*EmptyResponse, error) {
+	rsp := &EmptyResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x00, nil, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbPermitJoiningRequest struct {
+	Destination string `hex:"uint16"`
+	Timeout     uint8
+}
+
+func (znp *Znp) SapiZbPermitJoiningRequest(destination string, timeout uint8) (*StatusResponse, error) {
+	req := &SapiZbPermitJoiningRequest{Destination: destination, Timeout: timeout}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x08, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbBindDevice struct {
+	Create      uint8
+	CommandID   uint16
+	Destination string `hex:"uint64"`
+}
+
+func (znp *Znp) SapiZbBindDevice(create uint8, commandId uint16, destination string) (*EmptyResponse, error) {
+	req := &SapiZbBindDevice{Create: create, CommandID: commandId, Destination: destination}
+	rsp := &EmptyResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x01, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbAllowBind struct {
+	Timeout uint8
+}
+
+func (znp *Znp) SapiZbAllowBind(timeout uint8) (*EmptyResponse, error) {
+	req := &SapiZbAllowBind{Timeout: timeout}
+	rsp := &EmptyResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x02, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+const (
+	ZbBindingAddr   = "0xFFFE"
+	ZbBroadcastAddr = "0xFFFF"
+)
+
+type SapiZbSendDataRequest struct {
+	Destination string `hex:"uint16"`
+	CommandID   uint16
+	Handle      uint8
+	Ack         uint8
+	Radius      uint8
+	Data        []uint8 `len:"uint8"`
+}
+
+func (znp *Znp) SapiZbSendDataRequest(destination string, commandID uint16, handle uint8,
+	ack uint8, radius uint8, data []uint8) (*EmptyResponse, error) {
+	req := &SapiZbSendDataRequest{Destination: destination, CommandID: commandID,
+		Handle: handle, Ack: ack, Radius: radius, Data: data}
+	rsp := &EmptyResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x03, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbReadConfiguration struct {
+	ConfigID uint8
+}
+
+type SapiZbReadConfigurationResponse struct {
+	Status   Status
+	ConfigID uint8
+	Value    []uint8 `len:"uint8"`
+}
+
+func (znp *Znp) SapiZbReadConfiguration(configID uint8) (*SapiZbReadConfigurationResponse, error) {
+	req := &SapiZbReadConfiguration{ConfigID: configID}
+	rsp := &SapiZbReadConfigurationResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x04, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbWriteConfiguration struct {
+	ConfigID uint8
+	Value    []uint8 `len:"uint8"`
+}
+
+func (znp *Znp) SapiZbWriteConfiguration(configID uint8, value []uint8) (*StatusResponse, error) {
+	req := &SapiZbWriteConfiguration{ConfigID: configID, Value: value}
+	rsp := &StatusResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x05, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbGetDeviceInfo struct {
+	Param uint8
+}
+
+type SapiZbGetDeviceInfoResponse struct {
+	Param uint8
+	Value uint16
+}
+
+func (znp *Znp) SapiZbGetDeviceInfo(param uint8) (*SapiZbGetDeviceInfoResponse, error) {
+	req := &SapiZbGetDeviceInfo{Param: param}
+	rsp := &SapiZbGetDeviceInfoResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x06, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbFindDeviceRequest struct {
+	SearchKey string `hex:"uint64"`
+}
+
+func (znp *Znp) SapiZbFindDeviceRequest(searchKey string) (*EmptyResponse, error) {
+	req := &SapiZbFindDeviceRequest{SearchKey: searchKey}
+	rsp := &EmptyResponse{}
+	err := znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x07, req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return rsp, nil
+}
+
+type SapiZbStartConfirm struct {
+	Status Status
+}
+
+type SapiZbBindConfirm struct {
+	CommandID uint16
+	Status    Status
+}
+
+type SapiZbAllowBindConfirm struct {
+	Source string `hex:"uint16"`
+}
+
+type SapiZbSendDataConfirm struct {
+	Handle uint8
+	Status Status
+}
+
+type SapiZbReceiveDataIndication struct {
+	Source    string `hex:"uint16"`
+	CommandID uint16
+	Data      []uint8 `len:"uint8"`
+}
+
+type SapiZbFindDeviceConfirm struct {
+	SearchType uint8
+	Result     string `hex:"uint16"`
+	SearchKey  string `hex:"uint64"`
+}
+
+func init() {
+	//AF
+	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x80}] = &AfDataConfirm{}
+	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x83}] = &AfReflectError{}
+	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x81}] = &AfIncomingMessage{}
+	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x82}] = &AfIncomingMessageExt{}
+
+	//DEBUG
+	AsyncCommandRegistry[registryKey{unpi.S_DEBUG, 0x00}] = &DebugMsg{}
+
+	//SAPI
+	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x80}] = &SapiZbStartConfirm{}
+	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x81}] = &SapiZbBindConfirm{}
+	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x82}] = &SapiZbAllowBindConfirm{}
+	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x83}] = &SapiZbSendDataConfirm{}
+	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x87}] = &SapiZbReceiveDataIndication{}
+	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x85}] = &SapiZbFindDeviceConfirm{}
 }
 
 // =======SYS=======

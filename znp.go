@@ -7,6 +7,8 @@ import (
 	"time"
 
 	unpi "github.com/dyrkin/unpi-go"
+
+	"github.com/dyrkin/znp-go/reflection"
 )
 
 type Sync struct {
@@ -35,8 +37,10 @@ type Znp struct {
 	u            *unpi.Unpi
 	outbound     chan Outgoing
 	inbound      chan *unpi.Frame
-	AsyncInbound chan *unpi.Frame
+	AsyncInbound chan interface{}
 	Errors       chan error
+	FramesLog    chan *unpi.Frame
+	logFrames    bool
 }
 
 func New(u *unpi.Unpi) *Znp {
@@ -44,12 +48,17 @@ func New(u *unpi.Unpi) *Znp {
 		u:            u,
 		outbound:     make(chan Outgoing),
 		inbound:      make(chan *unpi.Frame),
-		AsyncInbound: make(chan *unpi.Frame),
+		AsyncInbound: make(chan interface{}),
 		Errors:       make(chan error),
+		FramesLog:    make(chan *unpi.Frame),
 	}
 	go znp.startProcessor()
 	go znp.incomingLoop()
 	return znp
+}
+
+func (znp *Znp) LogFrames(enabled bool) {
+	znp.logFrames = enabled
 }
 
 func (znp *Znp) ProcessRequest(commandType unpi.CommandType, subsystem unpi.Subsystem, command byte, request interface{}, response interface{}) (err error) {
@@ -149,7 +158,14 @@ func (znp *Znp) startProcessor() {
 					value.syncRsp <- frame
 				}
 			} else {
-				znp.AsyncInbound <- frame
+				key := registryKey{frame.Subsystem, frame.Command}
+				if value, ok := AsyncCommandRegistry[key]; ok {
+					copy := reflection.Copy(value)
+					deserialize(bytes.NewBuffer(frame.Payload), copy)
+					znp.AsyncInbound <- copy
+				} else {
+					znp.Errors <- fmt.Errorf("Unknown async command received: %v", frame)
+				}
 			}
 		}
 	}
@@ -162,6 +178,9 @@ func (znp *Znp) incomingLoop() {
 			znp.Errors <- err
 		} else {
 			znp.inbound <- frame
+			if znp.logFrames {
+				znp.FramesLog <- frame
+			}
 		}
 	}
 }
