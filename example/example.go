@@ -37,7 +37,7 @@ func main() {
 		}
 	}()
 
-	// z.Reset(1)
+	// z.SysResetReq(1)
 
 	var res interface{}
 
@@ -71,7 +71,7 @@ func main() {
 	}
 	fmt.Printf("%+v\n", res)
 
-	res, err = z.SapiZbPermitJoiningRequest("0xFF00", 50)
+	res, err = z.SapiZbPermitJoiningRequest("0xFF00", 200)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,6 +90,26 @@ func main() {
 	fmt.Printf("%+v\n", res)
 
 	res, err = z.SapiZbFindDeviceRequest("0x00124b00019c2ee9")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", res)
+
+	res, err = z.SysOsalStartTimer(1, 3000)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", res)
+
+	t := time.Now()
+
+	res, err = z.SysSetTime(0, uint8(t.Hour()), uint8(t.Minute()), uint8(t.Second()), uint8(t.Month()), uint8(t.Day()), uint16(t.Year()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", res)
+
+	res, err = z.SysGetTime()
 	if err != nil {
 		log.Fatal(err)
 	}

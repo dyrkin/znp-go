@@ -12,12 +12,12 @@ type MySuite struct{}
 
 var _ = Suite(&MySuite{})
 
-func (s *MySuite) TestCopy(c *C) {
-	type Struct struct {
-		v1 uint8
-		v2 string
-	}
+type Struct struct {
+	v1 uint8
+	v2 string
+}
 
+func (s *MySuite) TestCopy(c *C) {
 	copy1 := Copy(&Struct{1, "2"})
 
 	c.Assert(copy1, DeepEquals, &Struct{})
@@ -25,4 +25,14 @@ func (s *MySuite) TestCopy(c *C) {
 	copy2 := Copy(Struct{1, "2"})
 
 	c.Assert(copy2, DeepEquals, Struct{})
+}
+
+func InitReturnType() (r *Struct) {
+	Init(&r)
+	return
+}
+
+func (s *MySuite) TestInit(c *C) {
+	res := InitReturnType()
+	c.Assert(res, DeepEquals, &Struct{})
 }

@@ -86,6 +86,41 @@ const (
 	InterPanChk
 )
 
+type Channel uint8
+
+const (
+	AIN0 Channel = iota
+	AIN1
+	AIN2
+	AIN3
+	AIN4
+	AIN5
+	AIN6
+	AIN7
+	TemperatureSensor Channel = 0x0E + iota
+	VoltageReading
+)
+
+type Resolution uint8
+
+const (
+	Bit8 Resolution = iota
+	Bit10
+	Bit12
+	Bit14
+)
+
+type Operation uint8
+
+const (
+	SetDirection Operation = iota
+	SetInputMode
+	Set
+	Clear
+	Toggle
+	Read
+)
+
 type StatusResponse struct {
 	Status Status
 }
@@ -691,6 +726,151 @@ type SysOsalNvLengthResponse struct {
 func (znp *Znp) SysOsalNvLength(id uint16) (rsp *SysOsalNvLengthResponse, err error) {
 	req := &SysOsalNvLength{ID: id}
 	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x13, req, &rsp)
+	return
+}
+
+type SysOsalStartTimer struct {
+	ID      uint8
+	Timeout uint16
+}
+
+//SysOsalStartTimer is used by the tester to start a timer event. The event will expired after the indicated
+//amount of time and a notification will be sent back to the tester.
+func (znp *Znp) SysOsalStartTimer(id uint8, timeout uint16) (rsp *StatusResponse, err error) {
+	req := &SysOsalStartTimer{ID: id, Timeout: timeout}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x0A, req, &rsp)
+	return
+}
+
+type SysOsalStopTimer struct {
+	ID uint8
+}
+
+//SysOsalStopTimer is used by the tester to stop a timer event.
+func (znp *Znp) SysOsalStopTimer(id uint8) (rsp *StatusResponse, err error) {
+	req := &SysOsalStopTimer{ID: id}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x0B, req, &rsp)
+	return
+}
+
+type SysRandomResponse struct {
+	Value uint16
+}
+
+//SysRandom is used by the tester to get a random 16-bit number.
+func (znp *Znp) SysRandom() (rsp *SysRandomResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x0C, nil, &rsp)
+	return
+}
+
+type SysAdcRead struct {
+	Channel    Channel
+	Resolution Resolution
+}
+
+type SysAdcReadResponse struct {
+	Value uint16
+}
+
+//SysAdcRead reads a value from the ADC based on specified channel and resolution.
+func (znp *Znp) SysAdcRead(channel Channel, resolution Resolution) (rsp *SysAdcReadResponse, err error) {
+	req := &SysAdcRead{Channel: channel, Resolution: resolution}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x0D, req, &rsp)
+	return
+}
+
+type SysGpio struct {
+	Operation Operation
+	Value     uint8
+}
+
+type SysGpioResponse struct {
+	Value uint8
+}
+
+//SysGpio is used by the tester to control the 4 GPIO pins on the CC2530-ZNP build.
+func (znp *Znp) SysGpio(operation Operation, value uint8) (rsp *SysGpioResponse, err error) {
+	req := &SysGpio{Operation: operation, Value: value}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x0E, req, &rsp)
+	return
+}
+
+type SysTime struct {
+	UTCTime uint32
+	Hour    uint8
+	Minute  uint8
+	Second  uint8
+	Month   uint8
+	Day     uint8
+	Year    uint16
+}
+
+//SysSetTime is used by the tester to set the target system date and time. The time can be
+//specified in “seconds since 00:00:00 on January 1, 2000” or in parsed date/time components
+func (znp *Znp) SysSetTime(utcTime uint32, hour uint8, minute uint8, second uint8,
+	month uint8, day uint8, year uint16) (rsp *StatusResponse, err error) {
+	req := &SysTime{UTCTime: utcTime, Hour: hour, Minute: minute, Second: second, Month: month, Day: day, Year: year}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x10, req, &rsp)
+	return
+}
+
+//SysGetTime is used by the tester to get the target system date and time. The time is returned in
+//seconds since 00:00:00 on January 1, 2000” and parsed date/time components.
+func (znp *Znp) SysGetTime() (rsp *SysTime, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x11, nil, &rsp)
+	return
+}
+
+type SysSetTxPower struct {
+	TXPower uint8
+}
+
+type SysSetTxPowerResponse struct {
+	TXPower uint8
+}
+
+//SysSetTxPower is used by the tester to set the target system radio transmit power. The returned TX
+//power is the actual setting applied to the radio – nearest characterized value for the specific radio
+func (znp *Znp) SysSetTxPower(txPower uint8) (rsp *SysSetTxPowerResponse, err error) {
+	req := &SysSetTxPower{TXPower: txPower}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x14, req, &rsp)
+	return
+}
+
+//SysZDiagsInitStats is used to initialize the statistics table in NV memory.
+func (znp *Znp) SysZDiagsInitStats() (rsp *StatusResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x17, nil, &rsp)
+	return
+}
+
+type SysZDiagsClearStats struct {
+	ClearNV uint8
+}
+
+type SysZDiagsClearStatsResponse struct {
+	SysClock uint32
+}
+
+//SysZDiagsClearStats is used to clear the statistics table. To clear data in NV (including the Boot
+//Counter) the clearNV flag shall be set to TRUE.
+func (znp *Znp) SysZDiagsClearStats(clearNV uint8) (rsp *SysZDiagsClearStatsResponse, err error) {
+	req := &SysZDiagsClearStats{ClearNV: clearNV}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x18, req, &rsp)
+	return
+}
+
+type SysZDiagsGetStats struct {
+	AttributeID uint16
+}
+
+type SysZDiagsGetStatsResponse struct {
+	AttributeValue uint32
+}
+
+//SysZDiagsGetStats is used to read a specific system (attribute) ID statistics and/or metrics value.
+func (znp *Znp) SysZDiagsGetStats(attributeID uint16) (rsp *SysZDiagsGetStatsResponse, err error) {
+	req := &SysZDiagsGetStats{AttributeID: attributeID}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x19, req, &rsp)
 	return
 }
 
