@@ -41,25 +41,25 @@ func main() {
 
 	var res interface{}
 
-	res, err = z.Ping()
+	res, err = z.SysPing()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s\n", res)
 
-	res, err = z.Version()
+	res, err = z.SysVersion()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v\n", res)
 
-	res, err = z.SetExtAddr("0x00124b00019c2ee9")
+	res, err = z.SysSetExtAddr("0x00124b00019c2ee9")
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v\n", res)
 
-	res, err = z.GetExtAddr()
+	res, err = z.SysGetExtAddr()
 	if err != nil {
 		log.Fatal(err)
 	}

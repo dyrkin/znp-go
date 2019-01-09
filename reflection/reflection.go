@@ -19,3 +19,11 @@ func Copy(n interface{}) interface{} {
 	log.Fatalf("Unsupported value: %#v", n)
 	return nil
 }
+
+func Init(r interface{}) {
+	m := reflect.ValueOf(r).Elem()
+	el := reflect.New(m.Type().Elem())
+	if m.CanSet() {
+		m.Set(el)
+	}
+}

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dyrkin/znp-go/reflection"
+
 	"github.com/dyrkin/znp-go/util"
 )
 
@@ -144,6 +146,10 @@ func serialize(request interface{}) []byte {
 
 func deserialize(buf *bytes.Buffer, response interface{}) {
 	mirror := reflect.ValueOf(response).Elem()
+	if (mirror.Kind() == reflect.Ptr) && mirror.IsNil() {
+		reflection.Init(response)
+		mirror = reflect.ValueOf(response).Elem().Elem()
+	}
 	bitmaskStarted := false
 	bitmaskStopped := false
 	var bitmaskBytes uint64
