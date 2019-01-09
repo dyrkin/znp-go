@@ -106,9 +106,7 @@ func (znp *Znp) AfRegister(endPoint uint8, appProfID uint16, appDeviceID uint16,
 	latencyReq LatencyReq, appInClusterList []uint16, appOutClusterList []uint16) (rsp *StatusResponse, err error) {
 	req := &AfRegister{EndPoint: endPoint, AppProfID: appProfID, AppDeviceID: appDeviceID,
 		AddDevVer: addDevVer, LatencyReq: latencyReq, AppInClusterList: appInClusterList, AppOutClusterList: appOutClusterList}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0, req, &rsp)
 	return
 }
 
@@ -135,9 +133,7 @@ func (znp *Znp) AfDataRequest(dstAddr string, dstEndpoint uint8, srcEndpoint uin
 	transId uint8, options *AfDataRequestOptions, radius uint8, data []uint8) (rsp *StatusResponse, err error) {
 	req := &AfDataRequest{DstAddr: dstAddr, DstEndpoint: dstEndpoint, SrcEndpoint: srcEndpoint,
 		ClusterID: clusterId, TransID: transId, Options: options, Radius: radius, Data: data}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x01, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x01, req, &rsp)
 	return
 }
 
@@ -159,9 +155,7 @@ func (znp *Znp) AfDataRequestExt(dstAddrMode AddrMode, dstAddr string, dstEndpoi
 	data []uint8) (rsp *StatusResponse, err error) {
 	req := &AfDataRequestExt{DstAddrMode: dstAddrMode, DstAddr: dstAddr, DstEndpoint: dstEndpoint, DstPanID: dstPanId, SrcEndpoint: srcEndpoint,
 		ClusterID: clusterId, TransID: transId, Options: options, Radius: radius, Data: data}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x02, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x02, req, &rsp)
 	return
 }
 
@@ -187,9 +181,7 @@ func (znp *Znp) AfDataRequestSrcRtg(dstAddr string, dstEndpoint uint8, srcEndpoi
 	transId uint8, options *AfDataRequestSrcRtgOptions, radius uint8, relayList []string, data []uint8) (rsp *StatusResponse, err error) {
 	req := &AfDataRequestSrcRtg{DstAddr: dstAddr, DstEndpoint: dstEndpoint, SrcEndpoint: srcEndpoint,
 		ClusterID: clusterId, TransID: transId, Options: options, Radius: radius, RelayList: relayList, Data: data}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x03, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x03, req, &rsp)
 	return
 }
 
@@ -227,9 +219,7 @@ type AfInterPanCtl struct {
 
 func (znp *Znp) AfInterPanCtl(command InterPanCommand, data AfInterPanCtlData) (rsp *StatusResponse, err error) {
 	req := &AfInterPanCtl{Command: command, Data: data}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x10, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x10, req, &rsp)
 	return
 }
 
@@ -240,9 +230,7 @@ type AfDataStore struct {
 
 func (znp *Znp) AfDataStore(index uint16, data []uint8) (rsp *StatusResponse, err error) {
 	req := &AfDataStore{Index: index, Data: data}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x11, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x11, req, &rsp)
 	return
 }
 
@@ -259,9 +247,7 @@ type AfDataRetrieveResponse struct {
 
 func (znp *Znp) AfDataRetrieve(timestamp uint32, index uint16, length uint8) (rsp *AfDataRetrieveResponse, err error) {
 	req := &AfDataRetrieve{Timestamp: timestamp, Index: index, Length: length}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x12, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x12, req, &rsp)
 	return
 }
 
@@ -273,9 +259,7 @@ type AfApsfConfigSet struct {
 
 func (znp *Znp) AfApsfConfigSet(endpoint uint8, frameDelay uint8, windowSize uint8) (rsp *StatusResponse, err error) {
 	req := &AfApsfConfigSet{Endpoint: endpoint, FrameDelay: frameDelay, WindowSize: windowSize}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x13, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0x13, req, &rsp)
 	return
 }
 
@@ -337,9 +321,7 @@ func (znp *Znp) AppMsg(appEndpoint uint8, dstAddr string, dstEndpoint uint8, clu
 	message []uint8) (rsp *StatusResponse, err error) {
 	req := &AppMsg{AppEndpoint: appEndpoint, DstAddr: dstAddr, DstEndpoint: dstEndpoint,
 		ClusterID: clusterID, Message: message}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x00, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x00, req, &rsp)
 	return
 }
 
@@ -352,9 +334,7 @@ type AppUserTest struct {
 
 func (znp *Znp) AppUserTest(srcEndpoint uint8, commandId uint16, parameter1 uint16, parameter2 uint16) (rsp *StatusResponse, err error) {
 	req := &AppUserTest{SrcEndpoint: srcEndpoint, CommandID: commandId, Parameter1: parameter1, Parameter2: parameter2}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x01, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x01, req, &rsp)
 	return
 }
 
@@ -367,9 +347,7 @@ type DebugSetThreshold struct {
 
 func (znp *Znp) DebugSetThreshold(componentId uint8, threshold uint8) (rsp *StatusResponse, err error) {
 	req := &DebugSetThreshold{ComponentID: componentId, Threshold: threshold}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_DEBUG, 0x00, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_DEBUG, 0x00, req, &rsp)
 	return
 }
 
@@ -385,9 +363,7 @@ func (znp *Znp) DebugMsg(str string) error {
 // =======MAC======= is not supported on my device
 
 func (znp *Znp) MacInit() (rsp *StatusResponse, err error) {
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_MAC, 0x02, nil, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_MAC, 0x02, nil, &rsp)
 	return
 }
 
@@ -400,9 +376,7 @@ func (znp *Znp) SapiZbSystemReset() error {
 type EmptyResponse struct{}
 
 func (znp *Znp) SapiZbStartRequest() (rsp *EmptyResponse, err error) {
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x00, nil, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x00, nil, &rsp)
 	return
 }
 
@@ -413,9 +387,7 @@ type SapiZbPermitJoiningRequest struct {
 
 func (znp *Znp) SapiZbPermitJoiningRequest(destination string, timeout uint8) (rsp *StatusResponse, err error) {
 	req := &SapiZbPermitJoiningRequest{Destination: destination, Timeout: timeout}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x08, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x08, req, &rsp)
 	return
 }
 
@@ -427,9 +399,7 @@ type SapiZbBindDevice struct {
 
 func (znp *Znp) SapiZbBindDevice(create uint8, commandId uint16, destination string) (rsp *EmptyResponse, err error) {
 	req := &SapiZbBindDevice{Create: create, CommandID: commandId, Destination: destination}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x01, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x01, req, &rsp)
 	return
 }
 
@@ -439,9 +409,7 @@ type SapiZbAllowBind struct {
 
 func (znp *Znp) SapiZbAllowBind(timeout uint8) (rsp *EmptyResponse, err error) {
 	req := &SapiZbAllowBind{Timeout: timeout}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x02, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x02, req, &rsp)
 	return
 }
 
@@ -463,9 +431,7 @@ func (znp *Znp) SapiZbSendDataRequest(destination string, commandID uint16, hand
 	ack uint8, radius uint8, data []uint8) (rsp *EmptyResponse, err error) {
 	req := &SapiZbSendDataRequest{Destination: destination, CommandID: commandID,
 		Handle: handle, Ack: ack, Radius: radius, Data: data}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x03, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x03, req, &rsp)
 	return
 }
 
@@ -481,9 +447,7 @@ type SapiZbReadConfigurationResponse struct {
 
 func (znp *Znp) SapiZbReadConfiguration(configID uint8) (rsp *SapiZbReadConfigurationResponse, err error) {
 	req := &SapiZbReadConfiguration{ConfigID: configID}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x04, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x04, req, &rsp)
 	return
 }
 
@@ -494,9 +458,7 @@ type SapiZbWriteConfiguration struct {
 
 func (znp *Znp) SapiZbWriteConfiguration(configID uint8, value []uint8) (rsp *StatusResponse, err error) {
 	req := &SapiZbWriteConfiguration{ConfigID: configID, Value: value}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x05, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x05, req, &rsp)
 	return
 }
 
@@ -511,9 +473,7 @@ type SapiZbGetDeviceInfoResponse struct {
 
 func (znp *Znp) SapiZbGetDeviceInfo(param uint8) (rsp *SapiZbGetDeviceInfoResponse, err error) {
 	req := &SapiZbGetDeviceInfo{Param: param}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x06, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x06, req, &rsp)
 	return
 }
 
@@ -523,9 +483,7 @@ type SapiZbFindDeviceRequest struct {
 
 func (znp *Znp) SapiZbFindDeviceRequest(searchKey string) (rsp *EmptyResponse, err error) {
 	req := &SapiZbFindDeviceRequest{SearchKey: searchKey}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x07, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SAPI, 0x07, req, &rsp)
 	return
 }
 
@@ -583,9 +541,7 @@ type SysPingResponse struct {
 
 //SysPing issues PING requests to verify if a device is active and check the capability of the device.
 func (znp *Znp) SysPing() (rsp *SysPingResponse, err error) {
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x01, nil, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x01, nil, &rsp)
 	return
 }
 
@@ -598,9 +554,7 @@ type SysVersionResponse struct {
 }
 
 func (znp *Znp) SysVersion() (rsp *SysVersionResponse, err error) {
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x02, nil, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x02, nil, &rsp)
 	return
 }
 
@@ -611,9 +565,7 @@ type SysSetExtAddr struct {
 //SysSetExtAddr is used to set the extended address of the device
 func (znp *Znp) SysSetExtAddr(extAddr string) (rsp *StatusResponse, err error) {
 	req := &SysSetExtAddr{ExtAddress: extAddr}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x03, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x03, req, &rsp)
 	return
 }
 
@@ -623,9 +575,7 @@ type SysGetExtAddrResponse struct {
 
 //SysGetExtAddr is used to get the extended address of the device
 func (znp *Znp) SysGetExtAddr() (rsp *SysGetExtAddrResponse, err error) {
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x04, nil, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x04, nil, &rsp)
 	return
 }
 
@@ -643,9 +593,7 @@ type SysRamReadResponse struct {
 //command accepts an address value and returns the memory value present in the target RAM at that address.
 func (znp *Znp) SysRamRead(address uint16, len uint8) (rsp *SysRamReadResponse, err error) {
 	req := &SysRamRead{Address: address, Len: len}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x05, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x05, req, &rsp)
 	return
 }
 
@@ -659,9 +607,7 @@ type SysRamWrite struct {
 //address location in the target RAM.
 func (znp *Znp) SysRamWrite(address uint16, value []uint8) (rsp *StatusResponse, err error) {
 	req := &SysRamWrite{Address: address, Value: value}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x06, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x06, req, &rsp)
 	return
 }
 
@@ -680,9 +626,7 @@ type SysOsalNvReadResponse struct {
 //present in the target for the specified attribute Id.
 func (znp *Znp) SysOsalNvRead(id uint16, offset uint8) (rsp *StatusResponse, err error) {
 	req := &SysOsalNvRead{ID: id, Offset: offset}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x08, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x08, req, &rsp)
 	return
 }
 
@@ -697,9 +641,7 @@ type SysOsalNvWrite struct {
 //written to the location specified for the attribute Id in the target.
 func (znp *Znp) SysOsalNvWrite(id uint16, offset uint8, value []uint8) (rsp *StatusResponse, err error) {
 	req := &SysOsalNvWrite{ID: id, Offset: offset, Value: value}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x09, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x09, req, &rsp)
 	return
 }
 
@@ -718,9 +660,7 @@ type SysOsalNvItemInit struct {
 //command to finish the initialization.
 func (znp *Znp) SysOsalNvItemInit(id uint16, itemLen uint16, initData []uint8) (rsp *StatusResponse, err error) {
 	req := &SysOsalNvItemInit{ID: id, ItemLen: itemLen, InitData: initData}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x07, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x07, req, &rsp)
 	return
 }
 
@@ -734,9 +674,7 @@ type SysOsalNvDelete struct {
 //caution – deleted items cannot be recovered.
 func (znp *Znp) SysOsalNvDelete(id uint16, itemLen uint16) (rsp *StatusResponse, err error) {
 	req := &SysOsalNvDelete{ID: id, ItemLen: itemLen}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x12, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x12, req, &rsp)
 	return
 }
 
@@ -752,9 +690,7 @@ type SysOsalNvLengthResponse struct {
 //returned length of zero indicates that the NV item does not exist.
 func (znp *Znp) SysOsalNvLength(id uint16) (rsp *SysOsalNvLengthResponse, err error) {
 	req := &SysOsalNvLength{ID: id}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x13, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x13, req, &rsp)
 	return
 }
 
@@ -765,9 +701,7 @@ type LedControlRequest struct {
 
 func (znp *Znp) LedControl(ledID uint8, mode uint8) (rsp *StatusResponse, err error) {
 	req := &LedControlRequest{LedID: ledID, Mode: mode}
-	if err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 10, req, &rsp); err != nil {
-		rsp = nil
-	}
+	znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 10, req, &rsp)
 	return
 }
 
