@@ -6,12 +6,15 @@ import (
 	"log"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	unpi "github.com/dyrkin/unpi-go"
 	znp "github.com/dyrkin/znp-go"
 	serial "go.bug.st/serial.v1"
 )
 
 func main() {
+	spew.Config.DisableCapacities = true
+	spew.Config.DisablePointerAddresses = true
 	mode := &serial.Mode{
 		BaudRate: 115200,
 	}
@@ -31,9 +34,9 @@ func main() {
 			case err := <-z.Errors:
 				fmt.Printf("Error: %s\n", err)
 			case async := <-z.AsyncInbound:
-				fmt.Printf("Async: %s\n", RenderStruct(async))
+				fmt.Printf("Async: %s\n", spew.Sdump(async))
 			case frame := <-z.FramesLog:
-				fmt.Printf("Frame received: %s\n", RenderStruct(frame))
+				fmt.Printf("Frame received: %s\n", spew.Sdump(frame))
 			}
 		}
 	}()
@@ -78,7 +81,7 @@ func main() {
 	}
 	PrintStruct(res)
 
-	res, err = z.LedControl(1, 0)
+	res, err = z.UtilLedControl(1, znp.OFF)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -128,11 +131,17 @@ func main() {
 	}
 	PrintStruct(res)
 
+	res, err = z.UtilLoopback([]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9})
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
 	time.Sleep(200 * time.Second)
 }
 
 func PrintStruct(v interface{}) {
-	fmt.Println(RenderStruct(v))
+	spew.Dump(v)
 }
 
 func RenderStruct(v interface{}) string {

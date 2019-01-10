@@ -1,7 +1,6 @@
-package znp
+package payload
 
 import (
-	"bytes"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -13,7 +12,37 @@ type MySuite struct{}
 
 var _ = Suite(&MySuite{})
 
-func (s *MySuite) TestSerialize(c *C) {
+func (s *MySuite) TestEncode(c *C) {
+	type AfInterPanCtlData interface{}
+
+	type AfInterPanChkData struct {
+		PanID    uint16
+		Endpoint uint8
+	}
+
+	type Capabilities struct {
+		Sys   uint16 `bitmask:"start" bits:"0x0001"`
+		Mac   uint16 `bits:"0x0002"`
+		Nwk   uint16 `bits:"0x0004"`
+		Af    uint16 `bits:"0x0008"`
+		Zdo   uint16 `bits:"0x0010"`
+		Sapi  uint16 `bits:"0x0020"`
+		Util  uint16 `bits:"0x0040"`
+		Debug uint16 `bits:"0x0080"`
+		App   uint16 `bits:"0x0100"`
+		Zoad  uint16 `bitmask:"end" bits:"0x1000"`
+	}
+
+	type Network struct {
+		NeighborPanID   uint16
+		LogicalChannel  uint8
+		StackProfile    uint8 `bitmask:"start" bits:"0b00001111"`
+		ZigbeeVersion   uint8 `bitmask:"end" bits:"0b11110000"`
+		BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
+		SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
+		PermitJoin      uint8
+	}
+
 	type Test struct {
 		F0  uint8
 		F1  uint16 `endianness:"be"`
@@ -46,7 +75,7 @@ func (s *MySuite) TestSerialize(c *C) {
 		F15: []string{"0xffaa", "0xaaff"},
 		F16: &AfInterPanChkData{1, 2},
 	}
-	payload := serialize(test)
+	payload := Encode(test)
 	c.Assert(payload, DeepEquals, []byte{0x1, 0x0, 0x2, 0x2, 0x0, 0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -64,16 +93,34 @@ func (s *MySuite) TestSerialize(c *C) {
 		0x02, 0xaa, 0xff, 0xff, 0xaa, 0x1, 0x0, 0x2})
 }
 
-func (s *MySuite) TestEnumSerialization(c *C) {
+func (s *MySuite) TestEnumEncodeDecode(c *C) {
+	type LatencyReq uint8
+
+	const (
+		NoLatency LatencyReq = iota
+		FastBeacons
+		SlowBeacons
+	)
+
+	type AfRegister struct {
+		EndPoint          uint8
+		AppProfID         uint16
+		AppDeviceID       uint16
+		AddDevVer         uint8
+		LatencyReq        LatencyReq
+		AppInClusterList  []uint16 `len:"uint8"`
+		AppOutClusterList []uint16 `len:"uint8"`
+	}
+
 	request := &AfRegister{EndPoint: 1, AppProfID: 2, AppDeviceID: 3, AddDevVer: 4,
 		LatencyReq: NoLatency, AppInClusterList: []uint16{5, 6}, AppOutClusterList: []uint16{7, 8}}
-	payload := serialize(request)
+	payload := Encode(request)
 	res := &AfRegister{}
-	deserialize(bytes.NewBuffer(payload), res)
+	Decode(payload, res)
 	c.Assert(res, DeepEquals, request)
 }
 
-func (s *MySuite) TestDeserialize(c *C) {
+func (s *MySuite) TestDecode(c *C) {
 	type Status uint8
 	const (
 		NO Status = iota
@@ -83,6 +130,16 @@ func (s *MySuite) TestDeserialize(c *C) {
 	type Statuses struct {
 		Status1 Status `bitmask:"start" bits:"0x01"`
 		Status2 Status `bitmask:"end" bits:"0x02"`
+	}
+
+	type Network struct {
+		NeighborPanID   uint16
+		LogicalChannel  uint8
+		StackProfile    uint8 `bitmask:"start" bits:"0b00001111"`
+		ZigbeeVersion   uint8 `bitmask:"end" bits:"0b11110000"`
+		BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
+		SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
+		PermitJoin      uint8
 	}
 
 	type Test struct {
@@ -133,12 +190,35 @@ func (s *MySuite) TestDeserialize(c *C) {
 		0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xe9, 0x2e, 0x9c,
 		0x1, 0x0, 0x4b, 0x12, 0x0, 0x4, 0x0, 0x5, 0x0, 0x1, 0xf4, 0x1, 0x2, 0x43, 0x65, 0x64, 0x02,
 		0xaa, 0xff, 0xff, 0xaa, 0x0b, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x01}
-	deserialize(bytes.NewBuffer(payload), res)
+	Decode(payload, res)
 
 	c.Assert(res, DeepEquals, test)
 }
 
-func (s *MySuite) TestSerializeDeserialize(c *C) {
+func (s *MySuite) TestEncodeDecode(c *C) {
+	type Capabilities struct {
+		Sys   uint16 `bitmask:"start" bits:"0x0001"`
+		Mac   uint16 `bits:"0x0002"`
+		Nwk   uint16 `bits:"0x0004"`
+		Af    uint16 `bits:"0x0008"`
+		Zdo   uint16 `bits:"0x0010"`
+		Sapi  uint16 `bits:"0x0020"`
+		Util  uint16 `bits:"0x0040"`
+		Debug uint16 `bits:"0x0080"`
+		App   uint16 `bits:"0x0100"`
+		Zoad  uint16 `bitmask:"end" bits:"0x1000"`
+	}
+
+	type Network struct {
+		NeighborPanID   uint16
+		LogicalChannel  uint8
+		StackProfile    uint8 `bitmask:"start" bits:"0b00001111"`
+		ZigbeeVersion   uint8 `bitmask:"end" bits:"0b11110000"`
+		BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
+		SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
+		PermitJoin      uint8
+	}
+
 	type Test struct {
 		F0  uint8
 		F1  uint16 `endianness:"be"`
@@ -182,13 +262,13 @@ func (s *MySuite) TestSerializeDeserialize(c *C) {
 		F11: []uint16{4, 5}, F12: []byte{1, 2, 3},
 		F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}, F15: "0x00124b00",
 		F16: "hello world"}
-	payload := serialize(test)
+	payload := Encode(test)
 	res := &Test{}
-	deserialize(bytes.NewBuffer(payload), res)
+	Decode(payload, res)
 	c.Assert(res, DeepEquals, test)
 }
 
-func (s *MySuite) TestDeserializeBitmask(c *C) {
+func (s *MySuite) TestDecodeBitmask(c *C) {
 	type Bitmask struct {
 		F0 uint8
 		F1 uint16 `bitmask:"start" bits:"0x0001"`
@@ -202,7 +282,20 @@ func (s *MySuite) TestDeserializeBitmask(c *C) {
 	bitmask := &Bitmask{6, 1, 0, 0, 1, 7, 1, 1}
 	res := &Bitmask{}
 	payload := []byte{6, 9, 0, 7, 3}
-	deserialize(bytes.NewBuffer(payload), res)
+	Decode(payload, res)
 
 	c.Assert(res, DeepEquals, bitmask)
+}
+
+func (s *MySuite) TestDecodeUnsizedArray(c *C) {
+	type DataStruct struct {
+		Data []uint8
+	}
+
+	str := &DataStruct{Data: []uint8{6, 1, 0, 0, 1, 7, 1, 1}}
+	res := &DataStruct{}
+	payload := Encode(str)
+	Decode(payload, res)
+
+	c.Assert(res, DeepEquals, str)
 }

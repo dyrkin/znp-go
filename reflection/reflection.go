@@ -27,3 +27,8 @@ func Init(r interface{}) {
 		m.Set(el)
 	}
 }
+
+func GetTag(tags reflect.StructTag, tagName string) (string, bool) {
+	v := tags.Get(tagName)
+	return v, v != ""
+}

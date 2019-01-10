@@ -1,13 +1,13 @@
 package znp
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"time"
 
 	unpi "github.com/dyrkin/unpi-go"
 
+	"github.com/dyrkin/znp-go/payload"
 	"github.com/dyrkin/znp-go/reflection"
 )
 
@@ -66,7 +66,7 @@ func (znp *Znp) ProcessRequest(commandType unpi.CommandType, subsystem unpi.Subs
 		CommandType: commandType,
 		Subsystem:   subsystem,
 		Command:     command,
-		Payload:     serialize(request),
+		Payload:     payload.Encode(request),
 	}
 	done := make(chan bool, 1)
 	go func() {
@@ -78,8 +78,7 @@ func (znp *Znp) ProcessRequest(commandType unpi.CommandType, subsystem unpi.Subs
 			znp.outbound <- outgoing
 			select {
 			case frame := <-outgoing.syncRsp:
-				buf := bytes.NewBuffer(frame.Payload)
-				deserialize(buf, response)
+				payload.Decode(frame.Payload, response)
 			case err = <-outgoing.syncErr:
 			}
 		} else {
@@ -161,7 +160,7 @@ func (znp *Znp) startProcessor() {
 				key := registryKey{frame.Subsystem, frame.Command}
 				if value, ok := AsyncCommandRegistry[key]; ok {
 					copy := reflection.Copy(value)
-					deserialize(bytes.NewBuffer(frame.Payload), copy)
+					payload.Decode(frame.Payload, copy)
 					znp.AsyncInbound <- copy
 				} else {
 					znp.Errors <- fmt.Errorf("Unknown async command received: %v", frame)

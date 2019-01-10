@@ -1,4 +1,4 @@
-package znp
+package payload
 
 import (
 	"bytes"
@@ -15,19 +15,12 @@ import (
 	"github.com/dyrkin/znp-go/util"
 )
 
-func order(endianness string) binary.ByteOrder {
-	if endianness == "be" {
-		return binary.BigEndian
-	}
-	return binary.LittleEndian
+func Encode(request interface{}) []byte {
+	return serialize(request)
 }
 
-func write(w io.Writer, endianness string, v interface{}) {
-	binary.Write(w, order(endianness), v)
-}
-
-func read(r io.Reader, endianness string, v interface{}) {
-	binary.Read(r, order(endianness), v)
+func Decode(payload []byte, response interface{}) {
+	deserialize(bytes.NewBuffer(payload), response)
 }
 
 func serialize(request interface{}) []byte {
@@ -42,11 +35,13 @@ func serialize(request interface{}) []byte {
 	for i := 0; i < mirror.NumField(); i++ {
 		valueMirror := mirror.Field(i)
 		typeMirror := mirror.Type().Field(i)
-		tagMirror := typeMirror.Tag
-		hex := tagMirror.Get("hex")
-		endianness := tagMirror.Get("endianness")
-		bitmask := tagMirror.Get("bitmask")
-		if bitmask != "" {
+		tags := typeMirror.Tag
+		hex, hexOk := reflection.GetTag(tags, "hex")
+		endianness, _ := reflection.GetTag(tags, "endianness")
+		length, lengthOk := reflection.GetTag(tags, "len")
+		bitmask, bitmaskOk := reflection.GetTag(tags, "bitmask")
+		bits, bitsOk := reflection.GetTag(tags, "bits")
+		if bitmaskOk {
 			bitmaskStarted = bitmask == "start"
 			bitmaskStopped = !bitmaskStarted
 			if bitmaskStarted {
@@ -55,8 +50,7 @@ func serialize(request interface{}) []byte {
 		}
 		var processBitmask = func(v interface{}) bool {
 			if bitmaskStarted || bitmaskStopped {
-				bits := tagMirror.Get("bits")
-				if bits == "" && bitmaskStarted {
+				if !bitsOk && bitmaskStarted {
 					log.Fatalf("Bitmask is started but bits tag is not defined")
 				}
 				bitmaskBits := bitmaskBits(bits)
@@ -71,9 +65,8 @@ func serialize(request interface{}) []byte {
 			}
 			return false
 		}
-		len := tagMirror.Get("len")
-		if len != "" {
-			switch len {
+		if lengthOk {
+			switch length {
 			case "uint8":
 				v := uint8(valueMirror.Len())
 				write(buf, endianness, v)
@@ -86,7 +79,7 @@ func serialize(request interface{}) []byte {
 			}
 		}
 		var writeString = func(v string) {
-			if hex != "" {
+			if hexOk {
 				switch hex {
 				case "uint64":
 					addr, _ := strconv.ParseUint(v[2:], 16, 64)
@@ -156,13 +149,13 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 	for i := 0; i < mirror.NumField(); i++ {
 		valueMirror := mirror.Field(i)
 		typeMirror := mirror.Type().Field(i)
-		tagMirror := typeMirror.Tag
-		hex := tagMirror.Get("hex")
-		endianness := tagMirror.Get("endianness")
-		length := tagMirror.Get("len")
-		bitmask := tagMirror.Get("bitmask")
+		tags := typeMirror.Tag
+		hex, hexOk := reflection.GetTag(tags, "hex")
+		endianness, _ := reflection.GetTag(tags, "endianness")
+		length, lengthOk := reflection.GetTag(tags, "len")
+		bitmask, bitmaskOk := reflection.GetTag(tags, "bitmask")
 		bitmaskStartedNow := false
-		if bitmask != "" {
+		if bitmaskOk {
 			bitmaskStarted = bitmask == "start"
 			bitmaskStopped = !bitmaskStarted
 			bitmaskStartedNow = bitmaskStarted
@@ -173,8 +166,8 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 				bitmaskBytes = util.Uint64(v)
 			}
 			if bitmaskStarted || bitmaskStopped {
-				bits := tagMirror.Get("bits")
-				if bits == "" && bitmaskStarted {
+				bits, bitsOk := reflection.GetTag(tags, "bits")
+				if !bitsOk && bitmaskStarted {
 					log.Fatalf("Bitmask is started but bits tag is not defined")
 				}
 				bitmaskBits := bitmaskBits(bits)
@@ -187,7 +180,7 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 			return false
 		}
 		var dynBufLen uint32
-		if length != "" {
+		if lengthOk {
 			switch length {
 			case "uint8":
 				var v uint8
@@ -228,7 +221,7 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 		}
 		switch valueMirror.Interface().(type) {
 		case string:
-			if hex != "" {
+			if hexOk {
 				valueMirror.SetString(readHexString())
 			} else {
 				b := make([]uint8, dynBufLen, dynBufLen)
@@ -296,12 +289,21 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 			var v [2]uint16
 			read(buf, endianness, &v)
 			valueMirror.Set(reflect.ValueOf(v))
-		case []byte:
-			v := make([]byte, dynBufLen)
-			read(buf, endianness, v)
-			valueMirror.Set(reflect.ValueOf(v))
+		case []uint8:
+			if lengthOk {
+				v := make([]uint8, dynBufLen)
+				read(buf, endianness, v)
+				valueMirror.Set(reflect.ValueOf(v))
+			} else {
+				valueMirror.Set(reflect.ValueOf(buf.Bytes()))
+			}
 		case []uint16:
-			v := make([]uint16, dynBufLen)
+			var v []uint16
+			if lengthOk {
+				v = make([]uint16, dynBufLen)
+			} else {
+				v = make([]uint16, len(buf.Bytes())/2)
+			}
 			read(buf, endianness, v)
 			valueMirror.Set(reflect.ValueOf(v))
 		default:
@@ -368,4 +370,19 @@ func bitmaskBits(value string) uint64 {
 		bitmaskBits, _ = strconv.ParseUint(value[2:], 2, len(value[2:]))
 	}
 	return bitmaskBits
+}
+
+func order(endianness string) binary.ByteOrder {
+	if endianness == "be" {
+		return binary.BigEndian
+	}
+	return binary.LittleEndian
+}
+
+func write(w io.Writer, endianness string, v interface{}) {
+	binary.Write(w, order(endianness), v)
+}
+
+func read(r io.Reader, endianness string, v interface{}) {
+	binary.Read(r, order(endianness), v)
 }

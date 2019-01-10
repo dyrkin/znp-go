@@ -145,6 +145,42 @@ const (
 	DeviceHasLostInformationAboutItsParent
 )
 
+type SubsystemId uint16
+
+const (
+	Sys           SubsystemId = 0x0100
+	Mac           SubsystemId = 0x0200
+	Nwk           SubsystemId = 0x0300
+	Af            SubsystemId = 0x0400
+	Zdo           SubsystemId = 0x0500
+	Sapi          SubsystemId = 0x0600
+	Util          SubsystemId = 0x0700
+	Debug         SubsystemId = 0x0800
+	App           SubsystemId = 0x0900
+	AllSubsystems SubsystemId = 0xFFFF
+)
+
+type Action uint8
+
+const (
+	Disable Action = 0
+	Enable  Action = 1
+)
+
+type Shift uint8
+
+const (
+	NoShift  Shift = 0
+	YesShift Shift = 1
+)
+
+type Mode uint8
+
+const (
+	OFF Mode = 0
+	ON  Mode = 1
+)
+
 type StatusResponse struct {
 	Status Status
 }
@@ -1106,7 +1142,7 @@ type UtilGetNvInfoResponse struct {
 	Status        *NvInfoStatus
 	IEEEAddr      string `hex:"uint64"`
 	ScanChannels  uint32
-	PanID         string `hex:"uint16"`
+	PanID         uint16
 	SecurityLevel uint8
 	PreConfigKey  [16]uint8
 }
@@ -1115,6 +1151,195 @@ type UtilGetNvInfoResponse struct {
 //target device.
 func (znp *Znp) UtilGetNvInfo() (rsp *UtilGetNvInfoResponse, err error) {
 	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x01, nil, &rsp)
+	return
+}
+
+type UtilSetPanId struct {
+	PanID uint16
+}
+
+//UtilSetPanId stores a PanId value into non-volatile memory to be used the next time the target device resets.
+func (znp *Znp) UtilSetPanId(panId uint16) (rsp *StatusResponse, err error) {
+	req := &UtilSetPanId{PanID: panId}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x02, req, &rsp)
+	return
+}
+
+type UtilSetChannels struct {
+	Channels uint32
+}
+
+//UtilSetChannels is used to store a channel select bit-mask into non-volatile memory to be used the
+//next time the target device resets.
+func (znp *Znp) UtilSetChannels(channels uint32) (rsp *StatusResponse, err error) {
+	req := &UtilSetChannels{Channels: channels}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x03, req, &rsp)
+	return
+}
+
+type UtilSetSecLevel struct {
+	SecLevel uint8
+}
+
+//UtilSetSecLevel is used to store a security level value into non-volatile memory to be used the next time the target device
+//resets.
+func (znp *Znp) UtilSetSecLevel(secLevel uint8) (rsp *StatusResponse, err error) {
+	req := &UtilSetSecLevel{SecLevel: secLevel}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x04, req, &rsp)
+	return
+}
+
+type UtilSetPreCfgKey struct {
+	PreCfgKey [16]uint8
+}
+
+//UtilSetPreCfgKey is used to store a pre-configured key array into non-volatile memory to be used the
+//next time the target device resets.
+func (znp *Znp) UtilSetPreCfgKey(preCfgKey [16]uint8) (rsp *StatusResponse, err error) {
+	req := &UtilSetPreCfgKey{PreCfgKey: preCfgKey}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x05, req, &rsp)
+	return
+}
+
+type UtilCallbackSubCmd struct {
+	SubsystemID SubsystemId
+	Action      Action
+}
+
+//UtilCallbackSubCmd subscribes/unsubscribes to layer callbacks. For particular subsystem callbacks to
+//work, the software must be compiled with a special flag that is unique to that subsystem to enable
+//the callback mechanism. For example to enable ZDO callbacks, MT_ZDO_CB_FUNC flag must
+//be compiled when the software is built. For complete list of callback compile flags, check section
+//1.2 or “Z-Stack Compile Options” document.
+func (znp *Znp) UtilCallbackSubCmd(subsystemID SubsystemId, action Action) (rsp *StatusResponse, err error) {
+	req := &UtilCallbackSubCmd{SubsystemID: subsystemID, Action: action}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x06, req, &rsp)
+	return
+}
+
+type Keys struct {
+	Key1 uint8 `bits:"0x01" bitmask:"start"`
+	Key2 uint8 `bits:"0x02"`
+	Key3 uint8 `bits:"0x04"`
+	Key4 uint8 `bits:"0x08"`
+	Key5 uint8 `bits:"0x10"`
+	Key6 uint8 `bits:"0x20"`
+	Key7 uint8 `bits:"0x40"`
+	Key8 uint8 `bits:"0x80" bitmask:"end"`
+}
+
+type UtilKeyEvent struct {
+	Keys  *Keys
+	Shift Shift
+}
+
+//UtilKeyEvent sends key and shift codes to the application that registered for key events. The keys parameter is a
+//bit mask, allowing for multiple keys in a single command. The return status indicates success if
+//the command is processed by a registered key handler, not whether the key code was used. Not all
+//applications support all key or shift codes but there is no indication when a key code is dropped.
+func (znp *Znp) UtilKeyEvent(keys *Keys, shift Shift) (rsp *StatusResponse, err error) {
+	req := &UtilKeyEvent{Keys: keys, Shift: shift}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x07, req, &rsp)
+	return
+}
+
+type UtilTimeAliveResponse struct {
+	Seconds uint32
+}
+
+//UtilTimeAlive is used by the tester to get the board’s time alive
+func (znp *Znp) UtilTimeAlive() (rsp *UtilTimeAliveResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x09, nil, &rsp)
+	return
+}
+
+type UtilLedControl struct {
+	LedID uint8
+	Mode  Mode
+}
+
+//UtilLedControl is used by the tester to control the LEDs on the board.
+func (znp *Znp) UtilLedControl(ledID uint8, mode Mode) (rsp *StatusResponse, err error) {
+	req := &UtilLedControl{LedID: ledID, Mode: mode}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x0A, req, &rsp)
+	return
+}
+
+type UtilLoopback struct {
+	Data []uint8
+}
+
+//UtilLoopback is used by the tester to test data buffer loopback.
+func (znp *Znp) UtilLoopback(data []uint8) (rsp *UtilLoopback, err error) {
+	req := &UtilLoopback{Data: data}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x10, req, &rsp)
+	return
+}
+
+type UtilDataReq struct {
+	SecurityUse uint8
+}
+
+//UtilDataReq is used by the tester to effect a MAC MLME Poll Request
+func (znp *Znp) UtilDataReq(securityUse uint8) (rsp *StatusResponse, err error) {
+	req := &UtilDataReq{SecurityUse: securityUse}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x11, req, &rsp)
+	return
+}
+
+//UtilSrcMatchEnable is used to enable AUTOPEND and source address matching.
+func (znp *Znp) UtilSrcMatchEnable() (rsp *StatusResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x20, nil, &rsp)
+	return
+}
+
+type UtilSrcMatchAddEntry struct {
+	AddrMode AddrMode
+	Address  string `hex:"uint64"`
+	PanID    uint16
+}
+
+//UtilSrcMatchAddEntry is used to add a short or extended address to the source address table
+func (znp *Znp) UtilSrcMatchAddEntry(addrMode AddrMode, address string, panId uint16) (rsp *StatusResponse, err error) {
+	req := &UtilSrcMatchAddEntry{AddrMode: addrMode, Address: address, PanID: panId}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x21, req, &rsp)
+	return
+}
+
+type UtilSrcMatchDelEntry struct {
+	AddrMode AddrMode
+	Address  string `hex:"uint64"`
+	PanID    uint16
+}
+
+//UtilSrcMatchDelEntry is used to delete a short or extended address from the source address table.
+func (znp *Znp) UtilSrcMatchDelEntry(addrMode AddrMode, address string, panId uint16) (rsp *StatusResponse, err error) {
+	req := &UtilSrcMatchDelEntry{AddrMode: addrMode, Address: address, PanID: panId}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x22, req, &rsp)
+	return
+}
+
+type UtilSrcMatchCheckSrcAddr struct {
+	AddrMode AddrMode
+	Address  string `hex:"uint64"`
+	PanID    uint16
+}
+
+//UtilSrcMatchCheckSrcAddr is used to delete a short or extended address from the source address table.
+func (znp *Znp) UtilSrcMatchCheckSrcAddr(addrMode AddrMode, address string, panId uint16) (rsp *StatusResponse, err error) {
+	req := &UtilSrcMatchCheckSrcAddr{AddrMode: addrMode, Address: address, PanID: panId}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x23, req, &rsp)
+	return
+}
+
+type UtilSrcMatchAckAllPending struct {
+	Action Action
+}
+
+//UtilSrcMatchAckAllPending is used to enable/disable acknowledging all packets with pending bit set.
+func (znp *Znp) UtilSrcMatchAckAllPending(action Action) (rsp *StatusResponse, err error) {
+	req := &UtilSrcMatchAckAllPending{Action: action}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x24, req, &rsp)
 	return
 }
 
@@ -1139,17 +1364,6 @@ func init() {
 	//SYS
 	AsyncCommandRegistry[registryKey{unpi.S_SYS, 0x80}] = &SysResetInd{}
 	AsyncCommandRegistry[registryKey{unpi.S_SYS, 0x81}] = &SysOsalTimerExpired{}
-}
-
-type LedControlRequest struct {
-	LedID uint8
-	Mode  uint8
-}
-
-func (znp *Znp) LedControl(ledID uint8, mode uint8) (rsp *StatusResponse, err error) {
-	req := &LedControlRequest{LedID: ledID, Mode: mode}
-	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 10, req, &rsp)
-	return
 }
 
 type Network struct {
