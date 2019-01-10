@@ -180,7 +180,7 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 				bitmaskBits := bitmaskBits(bits)
 				pos := util.FirstBitPosition(bitmaskBits)
 				v := util.Vtype(v, bitmaskBytes&bitmaskBits>>pos)
-				valueMirror.Set(reflect.ValueOf(v))
+				valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
 				bitmaskStopped = false
 				return true
 			}
@@ -306,6 +306,30 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 			valueMirror.Set(reflect.ValueOf(v))
 		default:
 			switch valueMirror.Kind() {
+			case reflect.Uint8:
+				var v uint8
+				if !processBitmask(&v) {
+					read(buf, endianness, &v)
+					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
+				}
+			case reflect.Uint16:
+				var v uint16
+				if !processBitmask(&v) {
+					read(buf, endianness, &v)
+					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
+				}
+			case reflect.Uint32:
+				var v uint32
+				if !processBitmask(&v) {
+					read(buf, endianness, &v)
+					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
+				}
+			case reflect.Uint64:
+				var v uint64
+				if !processBitmask(&v) {
+					read(buf, endianness, &v)
+					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
+				}
 			case reflect.Ptr:
 				el := reflect.New(valueMirror.Type().Elem())
 				v := el.Interface()

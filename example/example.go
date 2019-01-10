@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -30,9 +31,9 @@ func main() {
 			case err := <-z.Errors:
 				fmt.Printf("Error: %s\n", err)
 			case async := <-z.AsyncInbound:
-				fmt.Printf("Async: %v\n", async)
+				fmt.Printf("Async: %s\n", RenderStruct(async))
 			case frame := <-z.FramesLog:
-				fmt.Printf("Frame received: %v\n", frame)
+				fmt.Printf("Frame received: %s\n", RenderStruct(frame))
 			}
 		}
 	}()
@@ -45,61 +46,61 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%s\n", res)
+	PrintStruct(res)
 
 	res, err = z.SysVersion()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SysSetExtAddr("0x00124b00019c2ee9")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SysGetExtAddr()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SapiZbStartRequest()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SapiZbPermitJoiningRequest("0xFF00", 200)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.LedControl(1, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SapiZbReadConfiguration(1)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SapiZbFindDeviceRequest("0x00124b00019c2ee9")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SysOsalStartTimer(1, 3000)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	t := time.Now()
 
@@ -107,13 +108,34 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
 
 	res, err = z.SysGetTime()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", res)
+	PrintStruct(res)
+
+	res, err = z.UtilGetDeviceInfo()
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
+	res, err = z.UtilGetNvInfo()
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
 
 	time.Sleep(200 * time.Second)
+}
+
+func PrintStruct(v interface{}) {
+	fmt.Println(RenderStruct(v))
+}
+
+func RenderStruct(v interface{}) string {
+	jsonBytes, _ := json.Marshal(v)
+	return string(jsonBytes)
 }

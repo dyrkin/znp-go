@@ -3,6 +3,7 @@ package util
 import (
 	"log"
 	"math"
+	"reflect"
 )
 
 func Uint64(v interface{}) uint64 {
@@ -24,9 +25,18 @@ func Uint64(v interface{}) uint64 {
 	case uint64:
 		return uint64(z)
 	default:
-		log.Fatalf("Unsupported value: %#v: ", v)
-		return 0
+		v := reflect.ValueOf(v)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		switch v.Kind() {
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return uint64(v.Uint())
+		default:
+			log.Fatalf("Unsupported value: %#v: ", v)
+		}
 	}
+	return 0
 }
 
 func Vtype(v interface{}, val uint64) interface{} {
@@ -40,6 +50,20 @@ func Vtype(v interface{}, val uint64) interface{} {
 	case *uint64, uint64:
 		return uint64(val)
 	default:
+		v := reflect.ValueOf(v)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		switch v.Kind() {
+		case reflect.Uint8:
+			return uint8(v.Uint())
+		case reflect.Uint16:
+			return uint16(v.Uint())
+		case reflect.Uint32:
+			return uint32(v.Uint())
+		case reflect.Uint64:
+			return uint64(v.Uint())
+		}
 		log.Fatalf("Unsupported value: %#v", v)
 		return 0
 	}

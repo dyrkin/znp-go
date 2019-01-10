@@ -121,6 +121,30 @@ const (
 	Read
 )
 
+type Reason uint8
+
+const (
+	PowerUp Reason = iota
+	External
+	WatchDog
+)
+
+type DeviceState uint8
+
+const (
+	InitializedNotStartedAutomatically DeviceState = iota
+	InitializedNotConnectedToAnything
+	DiscoveringPANsToJoin
+	JoiningPAN
+	RejoiningPAN
+	JoinedButNotAuthenticated
+	StartedAsDeviceAfterAuthentication
+	DeviceJoinedAuthenticatedAndIsRouter
+	StartingAsZigBeeCoordinator
+	StartedAsZigBeeCoordinator
+	DeviceHasLostInformationAboutItsParent
+)
+
 type StatusResponse struct {
 	Status Status
 }
@@ -570,6 +594,20 @@ func (znp *Znp) SysResetReq(resetType byte) error {
 	return znp.ProcessRequest(unpi.C_AREQ, unpi.S_SYS, 0x00, req, nil)
 }
 
+//Capabilities represents the interfaces that this device can handle (compiled into the device)
+type Capabilities struct {
+	Sys   uint16 `bitmask:"start" bits:"0x0001"`
+	Mac   uint16 `bits:"0x0002"`
+	Nwk   uint16 `bits:"0x0004"`
+	Af    uint16 `bits:"0x0008"`
+	Zdo   uint16 `bits:"0x0010"`
+	Sapi  uint16 `bits:"0x0020"`
+	Util  uint16 `bits:"0x0040"`
+	Debug uint16 `bits:"0x0080"`
+	App   uint16 `bits:"0x0100"`
+	Zoad  uint16 `bitmask:"end" bits:"0x1000"`
+}
+
 type SysPingResponse struct {
 	Capabilities *Capabilities
 }
@@ -874,14 +912,209 @@ func (znp *Znp) SysZDiagsGetStats(attributeID uint16) (rsp *SysZDiagsGetStatsRes
 	return
 }
 
-type LedControlRequest struct {
-	LedID uint8
-	Mode  uint8
+//SysZDiagsRestoreStatsNv is used to restore the statistics table from NV into the RAM table.
+func (znp *Znp) SysZDiagsRestoreStatsNv() (rsp *StatusResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x1A, nil, &rsp)
+	return
 }
 
-func (znp *Znp) LedControl(ledID uint8, mode uint8) (rsp *StatusResponse, err error) {
-	req := &LedControlRequest{LedID: ledID, Mode: mode}
-	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 10, req, &rsp)
+type SysZDiagsSaveStatsToNvResponse struct {
+	SysClock uint32
+}
+
+//SysZDiagsSaveStatsToNv is used to save the statistics table from RAM to NV.
+func (znp *Znp) SysZDiagsSaveStatsToNv() (rsp *SysZDiagsSaveStatsToNvResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x1B, nil, &rsp)
+	return
+}
+
+type SysNvCreate struct {
+	SysID  uint8
+	ItemID uint16
+	SubID  uint16
+	Length uint32
+}
+
+//SysNvCreate is used to attempt to create an item in non-volatile memory.
+func (znp *Znp) SysNvCreate(sysID uint8, itemID uint16, subID uint16, length uint32) (rsp *StatusResponse, err error) {
+	req := &SysNvCreate{SysID: sysID, ItemID: itemID, SubID: subID, Length: length}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x30, req, &rsp)
+	return
+}
+
+type SysNvDelete struct {
+	SysID  uint8
+	ItemID uint16
+	SubID  uint16
+}
+
+//SysNvDelete is used to attempt to delete an item in non-volatile memory.
+func (znp *Znp) SysNvDelete(sysID uint8, itemID uint16, subID uint16) (rsp *StatusResponse, err error) {
+	req := &SysNvDelete{SysID: sysID, ItemID: itemID, SubID: subID}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x31, req, &rsp)
+	return
+}
+
+type SysNvLength struct {
+	SysID  uint8
+	ItemID uint16
+	SubID  uint16
+}
+
+type SysNvLengthResponse struct {
+	Length uint8
+}
+
+//SysNvLength is used to get the length of an item in non-volatile memory.
+func (znp *Znp) SysNvLength(sysID uint8, itemID uint16, subID uint16) (rsp *SysNvLengthResponse, err error) {
+	req := &SysNvLength{SysID: sysID, ItemID: itemID, SubID: subID}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x32, req, &rsp)
+	return
+}
+
+type SysNvRead struct {
+	SysID  uint8
+	ItemID uint16
+	SubID  uint16
+	Offset uint16
+	Length uint8
+}
+
+type SysNvReadResponse struct {
+	Status Status
+	Value  []uint8 `len:"uint8"`
+}
+
+//SysNvRead is used to read an item in non-volatile memory
+func (znp *Znp) SysNvRead(sysID uint8, itemID uint16, subID uint16, offset uint16, length uint8) (rsp *SysNvReadResponse, err error) {
+	req := &SysNvRead{SysID: sysID, ItemID: itemID, SubID: subID, Offset: offset, Length: length}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x33, req, &rsp)
+	return
+}
+
+type SysNvWrite struct {
+	SysID  uint8
+	ItemID uint16
+	SubID  uint16
+	Offset uint16
+	Value  []uint8 `len:"uint8"`
+}
+
+//SysNvWrite is used to write an item in non-volatile memory
+func (znp *Znp) SysNvWrite(sysID uint8, itemID uint16, subID uint16, offset uint16, value []uint8) (rsp *StatusResponse, err error) {
+	req := &SysNvWrite{SysID: sysID, ItemID: itemID, SubID: subID, Offset: offset, Value: value}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x34, req, &rsp)
+	return
+}
+
+type SysNvUpdate struct {
+	SysID  uint8
+	ItemID uint16
+	SubID  uint16
+	Value  []uint8 `len:"uint8"`
+}
+
+//SysNvUpdate is used to update an item in non-volatile memory
+func (znp *Znp) SysNvUpdate(sysID uint8, itemID uint16, subID uint16, value []uint8) (rsp *StatusResponse, err error) {
+	req := &SysNvUpdate{SysID: sysID, ItemID: itemID, SubID: subID, Value: value}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x35, req, &rsp)
+	return
+}
+
+type SysNvCompact struct {
+	Threshold uint16
+}
+
+//SysNvCompact is used to compact the active page in non-volatile memory
+func (znp *Znp) SysNvCompact(threshold uint16) (rsp *StatusResponse, err error) {
+	req := &SysNvCompact{Threshold: threshold}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x36, req, &rsp)
+	return
+}
+
+type SysNvReadExt struct {
+	ID     uint16
+	Offset uint16
+}
+
+//SysNvReadExt is used by the tester to read a single memory item from the target non-volatile
+//memory. The command accepts an attribute Id value and data offset and returns the memory value
+//present in the target for the specified attribute Id.
+func (znp *Znp) SysNvReadExt(id uint16, offset uint16) (rsp *SysNvReadResponse, err error) {
+	req := &SysNvReadExt{ID: id, Offset: offset}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x08, req, &rsp)
+	return
+}
+
+type SysNvWriteExt struct {
+	ID     uint16
+	Offset uint16
+	Value  []uint8 `len:"uint8"`
+}
+
+//SysNvWrite is used to write an item in non-volatile memory
+func (znp *Znp) SysNvWriteExt(id uint16, offset uint16, value []uint8) (rsp *StatusResponse, err error) {
+	req := &SysNvWriteExt{ID: id, Offset: offset, Value: value}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_SYS, 0x09, req, &rsp)
+	return
+}
+
+type SysResetInd struct {
+	Reason       Reason
+	TransportRev uint8
+	Product      uint8
+	MinorRel     uint8
+	HwRev        uint8
+}
+
+type SysOsalTimerExpired struct {
+	ID uint8
+}
+
+// =======UTIL=======
+
+type DeviceType struct {
+	Coordinator uint8 `bits:"0x01" bitmask:"start"`
+	Router      uint8 `bits:"0x02"`
+	EndDevice   uint8 `bits:"0x04" bitmask:"end"`
+}
+
+type UtilGetDeviceInfoResponse struct {
+	Status           Status
+	IEEEAddr         string `hex:"uint64"`
+	ShortAddr        string `hex:"uint16"`
+	DeviceType       *DeviceType
+	DeviceState      DeviceState
+	AssocDevicesList []string `len:"uint8" hex:"uint16"`
+}
+
+//UtilGetDeviceInfo is sent by the tester to retrieve the device info.
+func (znp *Znp) UtilGetDeviceInfo() (rsp *UtilGetDeviceInfoResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x00, nil, &rsp)
+	return
+}
+
+type NvInfoStatus struct {
+	IEEEAddress   Status `bits:"0b00000001" bitmask:"start"`
+	ScanChannels  Status `bits:"0b00000010"`
+	PanID         Status `bits:"0b00000100"`
+	SecurityLevel Status `bits:"0b00001000"`
+	PreConfigKey  Status `bits:"0b00010000" bitmask:"end"`
+}
+
+type UtilGetNvInfoResponse struct {
+	Status        *NvInfoStatus
+	IEEEAddr      string `hex:"uint64"`
+	ScanChannels  uint32
+	PanID         string `hex:"uint16"`
+	SecurityLevel uint8
+	PreConfigKey  [16]uint8
+}
+
+//UtilGetNvInfo is used by the tester to read a block of parameters from non-volatile storage of the
+//target device.
+func (znp *Znp) UtilGetNvInfo() (rsp *UtilGetNvInfoResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x01, nil, &rsp)
 	return
 }
 
@@ -902,6 +1135,21 @@ func init() {
 	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x83}] = &SapiZbSendDataConfirm{}
 	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x87}] = &SapiZbReceiveDataIndication{}
 	AsyncCommandRegistry[registryKey{unpi.S_SAPI, 0x85}] = &SapiZbFindDeviceConfirm{}
+
+	//SYS
+	AsyncCommandRegistry[registryKey{unpi.S_SYS, 0x80}] = &SysResetInd{}
+	AsyncCommandRegistry[registryKey{unpi.S_SYS, 0x81}] = &SysOsalTimerExpired{}
+}
+
+type LedControlRequest struct {
+	LedID uint8
+	Mode  uint8
+}
+
+func (znp *Znp) LedControl(ledID uint8, mode uint8) (rsp *StatusResponse, err error) {
+	req := &LedControlRequest{LedID: ledID, Mode: mode}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 10, req, &rsp)
+	return
 }
 
 type Network struct {
@@ -912,18 +1160,4 @@ type Network struct {
 	BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
 	SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
 	PermitJoin      uint8
-}
-
-//Capabilities represents the interfaces that this device can handle (compiled into the device)
-type Capabilities struct {
-	Sys   uint16 `bitmask:"start" bits:"0x0001"`
-	Mac   uint16 `bits:"0x0002"`
-	Nwk   uint16 `bits:"0x0004"`
-	Af    uint16 `bits:"0x0008"`
-	Zdo   uint16 `bits:"0x0010"`
-	Sapi  uint16 `bits:"0x0020"`
-	Util  uint16 `bits:"0x0040"`
-	Debug uint16 `bits:"0x0080"`
-	App   uint16 `bits:"0x0100"`
-	Zoad  uint16 `bitmask:"end" bits:"0x1000"`
 }
