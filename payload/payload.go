@@ -3,7 +3,6 @@ package payload
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 	"reflect"
@@ -27,8 +26,6 @@ func serialize(request interface{}) []byte {
 	if request == nil {
 		return make([]byte, 0)
 	}
-	bitmaskStarted := false
-	bitmaskStopped := false
 	var bitmaskBytes uint64
 	buf := &bytes.Buffer{}
 	mirror := reflect.ValueOf(request).Elem()
@@ -39,44 +36,22 @@ func serialize(request interface{}) []byte {
 		hex, hexOk := reflection.GetTag(tags, "hex")
 		endianness, _ := reflection.GetTag(tags, "endianness")
 		length, lengthOk := reflection.GetTag(tags, "len")
-		bitmask, bitmaskOk := reflection.GetTag(tags, "bitmask")
+		bitmask, _ := reflection.GetTag(tags, "bitmask")
 		bits, bitsOk := reflection.GetTag(tags, "bits")
-		if bitmaskOk {
-			bitmaskStarted = bitmask == "start"
-			bitmaskStopped = !bitmaskStarted
-			if bitmaskStarted {
-				bitmaskBytes = 0
-			}
-		}
-		var processBitmask = func(v interface{}) bool {
-			if bitmaskStarted || bitmaskStopped {
-				if !bitsOk && bitmaskStarted {
-					log.Fatalf("Bitmask is started but bits tag is not defined")
+		var writeBitmask = func(v interface{}) bool {
+			if bitsOk {
+				if bitmask == "start" {
+					bitmaskBytes = 0
 				}
 				bitmaskBits := bitmaskBits(bits)
 				pos := util.FirstBitPosition(bitmaskBits)
 				bitmaskBytes = bitmaskBytes | ((util.Uint64(v) << pos) & bitmaskBits)
-				if !bitmaskStarted && bitmaskStopped {
+				if bitmask == "end" {
 					write(buf, endianness, util.Vtype(v, bitmaskBytes))
 				}
-
-				bitmaskStopped = false
 				return true
 			}
 			return false
-		}
-		if lengthOk {
-			switch length {
-			case "uint8":
-				v := uint8(valueMirror.Len())
-				write(buf, endianness, v)
-			case "uint16":
-				v := uint16(valueMirror.Len())
-				write(buf, endianness, v)
-			case "uint32":
-				v := uint32(valueMirror.Len())
-				write(buf, endianness, v)
-			}
 		}
 		var writeString = func(v string) {
 			if hexOk {
@@ -98,23 +73,27 @@ func serialize(request interface{}) []byte {
 				write(buf, endianness, []uint8(v))
 			}
 		}
+		writeUint := func(v interface{}) {
+			if !writeBitmask(v) {
+				write(buf, endianness, v)
+			}
+		}
+		if lengthOk {
+			switch length {
+			case "uint8":
+				v := uint8(valueMirror.Len())
+				write(buf, endianness, v)
+			case "uint16":
+				v := uint16(valueMirror.Len())
+				write(buf, endianness, v)
+			case "uint32":
+				v := uint32(valueMirror.Len())
+				write(buf, endianness, v)
+			}
+		}
 		switch value := valueMirror.Interface().(type) {
-		case uint8:
-			if !processBitmask(value) {
-				write(buf, endianness, value)
-			}
-		case uint16:
-			if !processBitmask(value) {
-				write(buf, endianness, value)
-			}
-		case uint32:
-			if !processBitmask(value) {
-				write(buf, endianness, value)
-			}
-		case uint64:
-			if !processBitmask(value) {
-				write(buf, endianness, value)
-			}
+		case uint8, uint16, uint32, uint64:
+			writeUint(value)
 		case string:
 			writeString(value)
 		case []string:
@@ -143,8 +122,6 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 		reflection.Init(response)
 		mirror = reflect.ValueOf(response).Elem().Elem()
 	}
-	bitmaskStarted := false
-	bitmaskStopped := false
 	var bitmaskBytes uint64
 	for i := 0; i < mirror.NumField(); i++ {
 		valueMirror := mirror.Field(i)
@@ -153,31 +130,45 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 		hex, hexOk := reflection.GetTag(tags, "hex")
 		endianness, _ := reflection.GetTag(tags, "endianness")
 		length, lengthOk := reflection.GetTag(tags, "len")
-		bitmask, bitmaskOk := reflection.GetTag(tags, "bitmask")
-		bitmaskStartedNow := false
-		if bitmaskOk {
-			bitmaskStarted = bitmask == "start"
-			bitmaskStopped = !bitmaskStarted
-			bitmaskStartedNow = bitmaskStarted
-		}
-		var processBitmask = func(v interface{}) bool {
-			if bitmaskStartedNow {
-				read(buf, endianness, v)
-				bitmaskBytes = util.Uint64(v)
-			}
-			if bitmaskStarted || bitmaskStopped {
-				bits, bitsOk := reflection.GetTag(tags, "bits")
-				if !bitsOk && bitmaskStarted {
-					log.Fatalf("Bitmask is started but bits tag is not defined")
+		bitmask, _ := reflection.GetTag(tags, "bitmask")
+		bits, bitsOk := reflection.GetTag(tags, "bits")
+		var setBitmask = func(v interface{}) bool {
+			if bitsOk {
+				if bitmask == "start" {
+					read(buf, endianness, v)
+					bitmaskBytes = util.Uint64(v)
 				}
 				bitmaskBits := bitmaskBits(bits)
 				pos := util.FirstBitPosition(bitmaskBits)
 				v := util.Vtype(v, bitmaskBytes&bitmaskBits>>pos)
 				valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
-				bitmaskStopped = false
 				return true
 			}
 			return false
+		}
+		readHexString := func() string {
+			readHex := func(v interface{}) string {
+				read(buf, endianness, v)
+				hexString, _ := util.UintToHexString(v)
+				return hexString
+			}
+			switch hex {
+			case "uint64":
+				var v uint64
+				return readHex(&v)
+			case "uint32":
+				var v uint32
+				return readHex(&v)
+			case "uint16":
+				var v uint16
+				return readHex(&v)
+			case "uint8":
+				var v uint8
+				return readHex(&v)
+			default:
+				log.Fatalf("Unsupported hex size: %s", hex)
+			}
+			return ""
 		}
 		var dynBufLen uint32
 		if lengthOk {
@@ -196,28 +187,32 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 				dynBufLen = v
 			}
 		}
-		var readHexString = func() string {
-			switch hex {
-			case "uint64":
-				var v uint64
-				read(buf, endianness, &v)
-				return fmt.Sprintf("0x%016x", v)
-			case "uint32":
-				var v uint32
-				read(buf, endianness, &v)
-				return fmt.Sprintf("0x%08x", v)
-			case "uint16":
-				var v uint16
-				read(buf, endianness, &v)
-				return fmt.Sprintf("0x%04x", v)
-			case "uint8":
-				var v uint8
-				read(buf, endianness, &v)
-				return fmt.Sprintf("0x%02x", v)
-			default:
-				log.Fatalf("Unsupported hex format: %s", hex)
+		setUint := func(v interface{}) {
+			if !setBitmask(v) {
+				read(buf, endianness, v)
+				valueMirror.Set(reflect.ValueOf(v).Elem().Convert(valueMirror.Type()))
 			}
-			return ""
+		}
+		setSlice := func() {
+			if valueMirror.CanSet() {
+				valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
+				for i := 0; i < int(dynBufLen); i++ {
+					sliceElemMirror := valueMirror.Index(i)
+					el := reflect.New(sliceElemMirror.Type().Elem())
+					v := el.Interface()
+					deserialize(buf, v)
+					sliceElemMirror.Set(reflect.ValueOf(v))
+				}
+			}
+		}
+		setArray := func() {
+			for i := 0; i < valueMirror.Len(); i++ {
+				sliceElemMirror := valueMirror.Index(i)
+				el := reflect.New(sliceElemMirror.Type())
+				v := el.Interface()
+				read(buf, endianness, v)
+				sliceElemMirror.Set(reflect.ValueOf(v).Elem())
+			}
 		}
 		switch valueMirror.Interface().(type) {
 		case string:
@@ -237,58 +232,6 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 					sliceElemMirror.SetString(hexString)
 				}
 			}
-		case uint8:
-			var v uint8
-			if !processBitmask(&v) {
-				read(buf, endianness, &v)
-				valueMirror.Set(reflect.ValueOf(v))
-			}
-		case uint16:
-			var v uint16
-			if !processBitmask(&v) {
-				read(buf, endianness, &v)
-				valueMirror.Set(reflect.ValueOf(v))
-			}
-		case uint32:
-			var v uint32
-			if !processBitmask(&v) {
-				read(buf, endianness, &v)
-				valueMirror.Set(reflect.ValueOf(v))
-			}
-		case uint64:
-			var v uint64
-			if !processBitmask(&v) {
-				read(buf, endianness, &v)
-				valueMirror.Set(reflect.ValueOf(v))
-			}
-		case [8]byte:
-			var v [8]byte
-			read(buf, endianness, &v)
-			valueMirror.Set(reflect.ValueOf(v))
-		case [16]byte:
-			var v [16]byte
-			read(buf, endianness, &v)
-			valueMirror.Set(reflect.ValueOf(v))
-		case [18]byte:
-			var v [18]byte
-			read(buf, endianness, &v)
-			valueMirror.Set(reflect.ValueOf(v))
-		case [32]byte:
-			var v [32]byte
-			read(buf, endianness, &v)
-			valueMirror.Set(reflect.ValueOf(v))
-		case [42]byte:
-			var v [42]byte
-			read(buf, endianness, &v)
-			valueMirror.Set(reflect.ValueOf(v))
-		case [100]byte:
-			var v [100]byte
-			read(buf, endianness, &v)
-			valueMirror.Set(reflect.ValueOf(v))
-		case [2]uint16:
-			var v [2]uint16
-			read(buf, endianness, &v)
-			valueMirror.Set(reflect.ValueOf(v))
 		case []uint8:
 			if lengthOk {
 				v := make([]uint8, dynBufLen)
@@ -310,28 +253,16 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 			switch valueMirror.Kind() {
 			case reflect.Uint8:
 				var v uint8
-				if !processBitmask(&v) {
-					read(buf, endianness, &v)
-					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
-				}
+				setUint(&v)
 			case reflect.Uint16:
 				var v uint16
-				if !processBitmask(&v) {
-					read(buf, endianness, &v)
-					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
-				}
+				setUint(&v)
 			case reflect.Uint32:
 				var v uint32
-				if !processBitmask(&v) {
-					read(buf, endianness, &v)
-					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
-				}
+				setUint(&v)
 			case reflect.Uint64:
 				var v uint64
-				if !processBitmask(&v) {
-					read(buf, endianness, &v)
-					valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
-				}
+				setUint(&v)
 			case reflect.Ptr:
 				el := reflect.New(valueMirror.Type().Elem())
 				v := el.Interface()
@@ -340,16 +271,9 @@ func deserialize(buf *bytes.Buffer, response interface{}) {
 				}
 				deserialize(buf, v)
 			case reflect.Slice:
-				if valueMirror.CanSet() {
-					valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
-					for i := 0; i < int(dynBufLen); i++ {
-						sliceElemMirror := valueMirror.Index(i)
-						el := reflect.New(sliceElemMirror.Type().Elem())
-						v := el.Interface()
-						deserialize(buf, v)
-						sliceElemMirror.Set(reflect.ValueOf(v))
-					}
-				}
+				setSlice()
+			case reflect.Array:
+				setArray()
 			default:
 				el := reflect.New(valueMirror.Type())
 				v := el.Interface()
