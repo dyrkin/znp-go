@@ -193,8 +193,8 @@ type AfRegister struct {
 	AppDeviceID       uint16
 	AddDevVer         uint8
 	LatencyReq        LatencyReq
-	AppInClusterList  []uint16 `len:"uint8"`
-	AppOutClusterList []uint16 `len:"uint8"`
+	AppInClusterList  []uint16 `size:"1"`
+	AppOutClusterList []uint16 `size:"1"`
 }
 
 func (znp *Znp) AfRegister(endPoint uint8, appProfID uint16, appDeviceID uint16, addDevVer uint8,
@@ -214,14 +214,14 @@ type AfDataRequestOptions struct {
 }
 
 type AfDataRequest struct {
-	DstAddr     string `hex:"uint16"`
+	DstAddr     string `hex:"2"`
 	DstEndpoint uint8
 	SrcEndpoint uint8
 	ClusterID   uint16
 	TransID     uint8
 	Options     *AfDataRequestOptions
 	Radius      uint8
-	Data        []uint8 `len:"uint8"`
+	Data        []uint8 `size:"1"`
 }
 
 func (znp *Znp) AfDataRequest(dstAddr string, dstEndpoint uint8, srcEndpoint uint8, clusterId uint16,
@@ -234,7 +234,7 @@ func (znp *Znp) AfDataRequest(dstAddr string, dstEndpoint uint8, srcEndpoint uin
 
 type AfDataRequestExt struct {
 	DstAddrMode AddrMode
-	DstAddr     string `hex:"uint64"`
+	DstAddr     string `hex:"8"`
 	DstEndpoint uint8
 	DstPanID    uint16 //PAN - personal area networks
 	SrcEndpoint uint8
@@ -242,7 +242,7 @@ type AfDataRequestExt struct {
 	TransID     uint8
 	Options     *AfDataRequestOptions
 	Radius      uint8
-	Data        []uint8 `len:"uint16"`
+	Data        []uint8 `size:"2"`
 }
 
 func (znp *Znp) AfDataRequestExt(dstAddrMode AddrMode, dstAddr string, dstEndpoint uint8, dstPanId uint16,
@@ -261,15 +261,15 @@ type AfDataRequestSrcRtgOptions struct {
 }
 
 type AfDataRequestSrcRtg struct {
-	DstAddr     string `hex:"uint16"`
+	DstAddr     string `hex:"2"`
 	DstEndpoint uint8
 	SrcEndpoint uint8
 	ClusterID   uint16
 	TransID     uint8
 	Options     *AfDataRequestSrcRtgOptions
 	Radius      uint8
-	RelayList   []string `len:"uint8" hex:"uint16"`
-	Data        []uint8  `len:"uint8"`
+	RelayList   []string `size:"1" hex:"2"`
+	Data        []uint8  `size:"1"`
 }
 
 func (znp *Znp) AfDataRequestSrcRtg(dstAddr string, dstEndpoint uint8, srcEndpoint uint8, clusterId uint16,
@@ -320,7 +320,7 @@ func (znp *Znp) AfInterPanCtl(command InterPanCommand, data AfInterPanCtlData) (
 
 type AfDataStore struct {
 	Index uint16
-	Data  []uint8 `len:"uint8"`
+	Data  []uint8 `size:"1"`
 }
 
 func (znp *Znp) AfDataStore(index uint16, data []uint8) (rsp *StatusResponse, err error) {
@@ -337,7 +337,7 @@ type AfDataRetrieve struct {
 
 type AfDataRetrieveResponse struct {
 	Status StatusResponse
-	Data   []uint8 `len:"uint8"`
+	Data   []uint8 `size:"1"`
 }
 
 func (znp *Znp) AfDataRetrieve(timestamp uint32, index uint16, length uint8) (rsp *AfDataRetrieveResponse, err error) {
@@ -369,13 +369,13 @@ type AfReflectError struct {
 	Endpoint    uint8
 	TransID     uint8
 	DstAddrMode AddrMode
-	DstAddr     string `hex:"uint16"`
+	DstAddr     string `hex:"2"`
 }
 
 type AfIncomingMessage struct {
 	GroupID        uint16
 	ClusterID      uint16
-	SrcAddr        string `hex:"uint16"`
+	SrcAddr        string `hex:"2"`
 	SrcEndpoint    uint8
 	DstEndpoint    uint8
 	WasBroadcast   uint8
@@ -383,14 +383,14 @@ type AfIncomingMessage struct {
 	SecurityUse    uint8
 	Timestamp      uint32
 	TransSeqNumber uint8
-	Data           []uint8 `len:"uint8"`
+	Data           []uint8 `size:"1"`
 }
 
 type AfIncomingMessageExt struct {
 	GroupID        uint16
 	ClusterID      uint16
 	SrcAddrMode    AddrMode
-	SrcAddr        string `hex:"uint64"`
+	SrcAddr        string `hex:"8"`
 	SrcEndpoint    uint8
 	SrcPanID       uint16
 	DstEndpoint    uint8
@@ -399,17 +399,17 @@ type AfIncomingMessageExt struct {
 	SecurityUse    uint8
 	Timestamp      uint32
 	TransSeqNumber uint8
-	Data           []uint8 `len:"uint16"`
+	Data           []uint8 `size:"2"`
 }
 
 // =======APP=======
 
 type AppMsg struct {
 	AppEndpoint uint8
-	DstAddr     string `hex:"uint16"`
+	DstAddr     string `hex:"2"`
 	DstEndpoint uint8
 	ClusterID   uint16
-	Message     []uint8 `len:"uint8"`
+	Message     []uint8 `size:"1"`
 }
 
 func (znp *Znp) AppMsg(appEndpoint uint8, dstAddr string, dstEndpoint uint8, clusterID uint16,
@@ -447,7 +447,7 @@ func (znp *Znp) DebugSetThreshold(componentId uint8, threshold uint8) (rsp *Stat
 }
 
 type DebugMsg struct {
-	String string `len:"uint8"`
+	String string `size:"1"`
 }
 
 func (znp *Znp) DebugMsg(str string) error {
@@ -476,7 +476,7 @@ func (znp *Znp) SapiZbStartRequest() (rsp *EmptyResponse, err error) {
 }
 
 type SapiZbPermitJoiningRequest struct {
-	Destination string `hex:"uint16"`
+	Destination string `hex:"2"`
 	Timeout     uint8
 }
 
@@ -489,7 +489,7 @@ func (znp *Znp) SapiZbPermitJoiningRequest(destination string, timeout uint8) (r
 type SapiZbBindDevice struct {
 	Create      uint8
 	CommandID   uint16
-	Destination string `hex:"uint64"`
+	Destination string `hex:"8"`
 }
 
 func (znp *Znp) SapiZbBindDevice(create uint8, commandId uint16, destination string) (rsp *EmptyResponse, err error) {
@@ -514,12 +514,12 @@ const (
 )
 
 type SapiZbSendDataRequest struct {
-	Destination string `hex:"uint16"`
+	Destination string `hex:"2"`
 	CommandID   uint16
 	Handle      uint8
 	Ack         uint8
 	Radius      uint8
-	Data        []uint8 `len:"uint8"`
+	Data        []uint8 `size:"1"`
 }
 
 func (znp *Znp) SapiZbSendDataRequest(destination string, commandID uint16, handle uint8,
@@ -537,7 +537,7 @@ type SapiZbReadConfiguration struct {
 type SapiZbReadConfigurationResponse struct {
 	Status   Status
 	ConfigID uint8
-	Value    []uint8 `len:"uint8"`
+	Value    []uint8 `size:"1"`
 }
 
 func (znp *Znp) SapiZbReadConfiguration(configID uint8) (rsp *SapiZbReadConfigurationResponse, err error) {
@@ -548,7 +548,7 @@ func (znp *Znp) SapiZbReadConfiguration(configID uint8) (rsp *SapiZbReadConfigur
 
 type SapiZbWriteConfiguration struct {
 	ConfigID uint8
-	Value    []uint8 `len:"uint8"`
+	Value    []uint8 `size:"1"`
 }
 
 func (znp *Znp) SapiZbWriteConfiguration(configID uint8, value []uint8) (rsp *StatusResponse, err error) {
@@ -573,7 +573,7 @@ func (znp *Znp) SapiZbGetDeviceInfo(param uint8) (rsp *SapiZbGetDeviceInfoRespon
 }
 
 type SapiZbFindDeviceRequest struct {
-	SearchKey string `hex:"uint64"`
+	SearchKey string `hex:"8"`
 }
 
 func (znp *Znp) SapiZbFindDeviceRequest(searchKey string) (rsp *EmptyResponse, err error) {
@@ -592,7 +592,7 @@ type SapiZbBindConfirm struct {
 }
 
 type SapiZbAllowBindConfirm struct {
-	Source string `hex:"uint16"`
+	Source string `hex:"2"`
 }
 
 type SapiZbSendDataConfirm struct {
@@ -601,15 +601,15 @@ type SapiZbSendDataConfirm struct {
 }
 
 type SapiZbReceiveDataIndication struct {
-	Source    string `hex:"uint16"`
+	Source    string `hex:"2"`
 	CommandID uint16
-	Data      []uint8 `len:"uint8"`
+	Data      []uint8 `size:"1"`
 }
 
 type SapiZbFindDeviceConfirm struct {
 	SearchType uint8
-	Result     string `hex:"uint16"`
-	SearchKey  string `hex:"uint64"`
+	Result     string `hex:"2"`
+	SearchKey  string `hex:"8"`
 }
 
 // =======SYS=======
@@ -668,7 +668,7 @@ func (znp *Znp) SysVersion() (rsp *SysVersionResponse, err error) {
 }
 
 type SysSetExtAddr struct {
-	ExtAddress string `hex:"uint64"` //The device’s extended address.
+	ExtAddress string `hex:"8"` //The device’s extended address.
 }
 
 //SysSetExtAddr is used to set the extended address of the device
@@ -679,7 +679,7 @@ func (znp *Znp) SysSetExtAddr(extAddr string) (rsp *StatusResponse, err error) {
 }
 
 type SysGetExtAddrResponse struct {
-	ExtAddress string `hex:"uint64"` //The device’s extended address.
+	ExtAddress string `hex:"8"` //The device’s extended address.
 }
 
 //SysGetExtAddr is used to get the extended address of the device
@@ -695,7 +695,7 @@ type SysRamRead struct {
 
 type SysRamReadResponse struct {
 	Status uint8   //Status is either Success (0) or Failure (1).
-	Value  []uint8 `len:"uint8"` //The value read from the target RAM.
+	Value  []uint8 `size:"1"` //The value read from the target RAM.
 }
 
 //SysRamRead is used by the tester to read a single memory location in the target RAM. The
@@ -708,7 +708,7 @@ func (znp *Znp) SysRamRead(address uint16, len uint8) (rsp *SysRamReadResponse, 
 
 type SysRamWrite struct {
 	Address uint16  //Address of the memory that will be written.
-	Value   []uint8 `len:"uint8"` //The value written to the target RAM.
+	Value   []uint8 `size:"1"` //The value written to the target RAM.
 }
 
 //SysRamWrite is used by the tester to write to a particular location in the target RAM. The
@@ -727,7 +727,7 @@ type SysOsalNvRead struct {
 
 type SysOsalNvReadResponse struct {
 	Status Status
-	Value  []uint8 `len:"uint8"`
+	Value  []uint8 `size:"1"`
 }
 
 //SysOsalNvRead is used by the tester to read a single memory item from the target non-volatile
@@ -742,7 +742,7 @@ func (znp *Znp) SysOsalNvRead(id uint16, offset uint8) (rsp *StatusResponse, err
 type SysOsalNvWrite struct {
 	ID     uint16
 	Offset uint8
-	Value  []uint8 `len:"uint8"`
+	Value  []uint8 `size:"1"`
 }
 
 //SysOsalNvWrite is used by the tester to write to a particular item in non-volatile memory. The
@@ -757,7 +757,7 @@ func (znp *Znp) SysOsalNvWrite(id uint16, offset uint8, value []uint8) (rsp *Sta
 type SysOsalNvItemInit struct {
 	ID       uint16
 	ItemLen  uint16
-	InitData []uint8 `len:"uint8"`
+	InitData []uint8 `size:"1"`
 }
 
 //SysOsalNvItemInit is used by the tester to create and initialize an item in non-volatile memory. The
@@ -1018,7 +1018,7 @@ type SysNvRead struct {
 
 type SysNvReadResponse struct {
 	Status Status
-	Value  []uint8 `len:"uint8"`
+	Value  []uint8 `size:"1"`
 }
 
 //SysNvRead is used to read an item in non-volatile memory
@@ -1033,7 +1033,7 @@ type SysNvWrite struct {
 	ItemID uint16
 	SubID  uint16
 	Offset uint16
-	Value  []uint8 `len:"uint8"`
+	Value  []uint8 `size:"1"`
 }
 
 //SysNvWrite is used to write an item in non-volatile memory
@@ -1047,7 +1047,7 @@ type SysNvUpdate struct {
 	SysID  uint8
 	ItemID uint16
 	SubID  uint16
-	Value  []uint8 `len:"uint8"`
+	Value  []uint8 `size:"1"`
 }
 
 //SysNvUpdate is used to update an item in non-volatile memory
@@ -1085,7 +1085,7 @@ func (znp *Znp) SysNvReadExt(id uint16, offset uint16) (rsp *SysNvReadResponse, 
 type SysNvWriteExt struct {
 	ID     uint16
 	Offset uint16
-	Value  []uint8 `len:"uint8"`
+	Value  []uint8 `size:"1"`
 }
 
 //SysNvWrite is used to write an item in non-volatile memory
@@ -1117,11 +1117,11 @@ type DeviceType struct {
 
 type UtilGetDeviceInfoResponse struct {
 	Status           Status
-	IEEEAddr         string `hex:"uint64"`
-	ShortAddr        string `hex:"uint16"`
+	IEEEAddr         string `hex:"8"`
+	ShortAddr        string `hex:"2"`
 	DeviceType       *DeviceType
 	DeviceState      DeviceState
-	AssocDevicesList []string `len:"uint8" hex:"uint16"`
+	AssocDevicesList []string `size:"1" hex:"2"`
 }
 
 //UtilGetDeviceInfo is sent by the tester to retrieve the device info.
@@ -1140,7 +1140,7 @@ type NvInfoStatus struct {
 
 type UtilGetNvInfoResponse struct {
 	Status        *NvInfoStatus
-	IEEEAddr      string `hex:"uint64"`
+	IEEEAddr      string `hex:"8"`
 	ScanChannels  uint32
 	PanID         uint16
 	SecurityLevel uint8
@@ -1295,7 +1295,7 @@ func (znp *Znp) UtilSrcMatchEnable() (rsp *StatusResponse, err error) {
 
 type UtilSrcMatchAddEntry struct {
 	AddrMode AddrMode
-	Address  string `hex:"uint64"`
+	Address  string `hex:"8"`
 	PanID    uint16
 }
 
@@ -1308,7 +1308,7 @@ func (znp *Znp) UtilSrcMatchAddEntry(addrMode AddrMode, address string, panId ui
 
 type UtilSrcMatchDelEntry struct {
 	AddrMode AddrMode
-	Address  string `hex:"uint64"`
+	Address  string `hex:"8"`
 	PanID    uint16
 }
 
@@ -1321,7 +1321,7 @@ func (znp *Znp) UtilSrcMatchDelEntry(addrMode AddrMode, address string, panId ui
 
 type UtilSrcMatchCheckSrcAddr struct {
 	AddrMode AddrMode
-	Address  string `hex:"uint64"`
+	Address  string `hex:"8"`
 	PanID    uint16
 }
 

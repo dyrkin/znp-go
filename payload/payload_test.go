@@ -3,6 +3,7 @@ package payload
 import (
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	. "gopkg.in/check.v1"
 )
 
@@ -12,7 +13,45 @@ type MySuite struct{}
 
 var _ = Suite(&MySuite{})
 
-func (s *MySuite) TestEncode(c *C) {
+func (s *MySuite) TestEncode1(c *C) {
+	type Bitmask struct {
+		F0 uint8
+		F1 uint16 `bits:"0x0001" bitmask:"start" `
+		F2 uint16 `bits:"0x0002"`
+		F3 uint16 `bits:"0x0004"`
+		F4 uint16 `bits:"0x0008" bitmask:"end"`
+		F5 uint8
+		F6 uint8 `bits:"0x01" bitmask:"start" `
+		F7 uint8 `bits:"0x02" bitmask:"end"`
+	}
+
+	type Struct2 struct {
+		V uint8
+	}
+
+	type Struct struct {
+		V1          uint8
+		V2          uint8
+		BMask       *Bitmask
+		Hex         string `hex:"2"`
+		Str         string `size:"1"`
+		Arr         [2]uint8
+		Slice       []uint8
+		HexStrings  []string   `size:"1" hex:"2"`
+		StructSlice []*Struct2 `size:"1"`
+	}
+
+	bitmask := &Bitmask{6, 1, 0, 0, 1, 7, 1, 1}
+	str := &Struct{1, 2, bitmask, "0x0A0B", "hello world", [2]uint8{1, 2}, []uint8{3, 4},
+		[]string{"0xffaa", "0xaaff"}, []*Struct2{&Struct2{5}, &Struct2{6}}}
+
+	payload := Encode(str)
+	spew.Dump(payload)
+	c.Assert(payload, DeepEquals, []uint8{1, 2, 6, 9, 0, 7, 3, 0x0B, 0x0A, 0x0b, 0x68, 0x65, 0x6c, 0x6c,
+		0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 1, 2, 3, 4, 2, 0xaa, 0xff, 0xff, 0xaa, 2, 5, 6})
+}
+
+func (s *MySuite) TestEncode2(c *C) {
 	type AfInterPanCtlData interface{}
 
 	type AfInterPanChkData struct {
@@ -54,11 +93,11 @@ func (s *MySuite) TestEncode(c *C) {
 		F7  [32]byte
 		F8  [42]byte
 		F9  [100]byte
-		F11 string `hex:"uint64"` // string '0x00124b00019c2ee9'
+		F11 string `hex:"8"` // string '0x00124b00019c2ee9'
 		F12 [2]uint16
-		F13 []*Network `len:"uint8"`
+		F13 []*Network `size:"1"`
 		F14 *Capabilities
-		F15 []string `len:"uint8" hex:"uint16"`
+		F15 []string `size:"1" hex:"2"`
 		F16 AfInterPanCtlData
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F11: "0x00124b00019c2ee9", F12: [2]uint16{4, 5},
@@ -108,8 +147,8 @@ func (s *MySuite) TestEnumEncodeDecode(c *C) {
 		AppDeviceID       uint16
 		AddDevVer         uint8
 		LatencyReq        LatencyReq
-		AppInClusterList  []uint16 `len:"uint8"`
-		AppOutClusterList []uint16 `len:"uint8"`
+		AppInClusterList  []uint16 `size:"1"`
+		AppOutClusterList []uint16 `size:"1"`
 	}
 
 	request := &AfRegister{EndPoint: 1, AppProfID: 2, AppDeviceID: 3, AddDevVer: 4,
@@ -153,11 +192,11 @@ func (s *MySuite) TestDecode(c *C) {
 		F7  [32]byte
 		F8  [42]byte
 		F9  [100]byte
-		F11 string `hex:"uint64"` // string '0x00124b00019c2ee9'
+		F11 string `hex:"8"` // string '0x00124b00019c2ee9'
 		F12 [2]uint16
-		F13 []*Network `len:"uint8"`
-		F14 []string   `len:"uint8" hex:"uint16"`
-		F15 string     `len:"uint8"`
+		F13 []*Network `size:"1"`
+		F14 []string   `size:"1" hex:"2"`
+		F15 string     `size:"1"`
 		F16 *Statuses
 	}
 	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F11: "0x00124b00019c2ee9", F12: [2]uint16{4, 5},
@@ -230,13 +269,13 @@ func (s *MySuite) TestEncodeDecode(c *C) {
 		F7  [32]byte
 		F8  [42]byte
 		F9  [100]byte
-		F10 string     `hex:"uint64"` // string '0x00124b00019c2ee9'
-		F11 []uint16   `len:"uint8"`
-		F12 []byte     `len:"uint8"`
-		F13 []*Network `len:"uint8"`
+		F10 string     `hex:"8"` // string '0x00124b00019c2ee9'
+		F11 []uint16   `size:"1"`
+		F12 []byte     `size:"1"`
+		F13 []*Network `size:"1"`
 		F14 *Capabilities
-		F15 string `hex:"uint32"` // string '0x00124b00'
-		F16 string `len:"uint8"`
+		F15 string `hex:"4"` // string '0x00124b00'
+		F16 string `size:"1"`
 	}
 	networks := []*Network{
 		&Network{
@@ -296,6 +335,63 @@ func (s *MySuite) TestDecodeUnsizedArray(c *C) {
 	res := &DataStruct{}
 	payload := Encode(str)
 	Decode(payload, res)
+
+	c.Assert(res, DeepEquals, str)
+}
+
+func (s *MySuite) TestDecodeStruct(c *C) {
+	type Bitmask struct {
+		F0 uint8
+		F1 uint16 `bits:"0x0001" bitmask:"start" `
+		F2 uint16 `bits:"0x0002"`
+		F3 uint16 `bits:"0x0004"`
+		F4 uint16 `bits:"0x0008" bitmask:"end"`
+		F5 uint8
+		F6 uint8 `bits:"0x01" bitmask:"start" `
+		F7 uint8 `bits:"0x02" bitmask:"end"`
+	}
+	type Struct3 struct {
+		V1 uint8
+		V2 uint8
+	}
+	type Struct2 struct {
+		V           string `hex:"2"`
+		Ui16        uint16
+		BMask       *Bitmask
+		Arr         [2]uint8
+		Slice       []uint8    `size:"1"`
+		StructSlice []*Struct3 `size:"1"`
+	}
+	type Struct struct {
+		V    string `hex:"2"`
+		S    *Struct2
+		Ui16 uint16
+	}
+
+	bitmask := &Bitmask{6, 1, 0, 0, 1, 7, 1, 1}
+
+	payload := []uint8{1, 2, 1, 2, 1, 2, 6, 9, 0, 7, 3, 5, 6, 2, 7, 8, 2, 1, 2, 3, 4, 1, 2}
+	str := &Struct{"0x0201", &Struct2{"0x0201", 0x201, bitmask, [2]uint8{5, 6}, []uint8{7, 8}, []*Struct3{&Struct3{1, 2}, &Struct3{3, 4}}}, 0x201}
+	res := &Struct{}
+	Decode(payload, res)
+
+	c.Assert(res, DeepEquals, str)
+}
+
+type Struct4 struct {
+	V1 uint8
+	V2 uint8
+}
+
+func Fn() (res *Struct4) {
+	payload := []uint8{1, 2}
+	Decode(payload, &res)
+	return res
+}
+
+func (s *MySuite) TestDecodeFunctionReturnValue(c *C) {
+	str := &Struct4{1, 2}
+	res := Fn()
 
 	c.Assert(res, DeepEquals, str)
 }

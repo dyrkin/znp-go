@@ -3,287 +3,301 @@ package payload
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/dyrkin/znp-go/reflection"
-
 	"github.com/dyrkin/znp-go/util"
 )
 
+var types = map[int]reflect.Type{
+	1: reflect.TypeOf(uint8(0)),
+	2: reflect.TypeOf(uint16(0)),
+	4: reflect.TypeOf(uint32(0)),
+	8: reflect.TypeOf(uint64(0)),
+}
+
+var intType = reflect.TypeOf(int(0))
+
 func Encode(request interface{}) []byte {
-	return serialize(request)
-}
-
-func Decode(payload []byte, response interface{}) {
-	deserialize(bytes.NewBuffer(payload), response)
-}
-
-func serialize(request interface{}) []byte {
-	if request == nil {
-		return make([]byte, 0)
-	}
-	var bitmaskBytes uint64
+	value := reflect.ValueOf(request)
 	buf := &bytes.Buffer{}
-	mirror := reflect.ValueOf(request).Elem()
-	for i := 0; i < mirror.NumField(); i++ {
-		valueMirror := mirror.Field(i)
-		typeMirror := mirror.Type().Field(i)
-		tags := typeMirror.Tag
-		hex, hexOk := reflection.GetTag(tags, "hex")
-		endianness, _ := reflection.GetTag(tags, "endianness")
-		length, lengthOk := reflection.GetTag(tags, "len")
-		bitmask, _ := reflection.GetTag(tags, "bitmask")
-		bits, bitsOk := reflection.GetTag(tags, "bits")
-		var writeBitmask = func(v interface{}) bool {
-			if bitsOk {
-				if bitmask == "start" {
-					bitmaskBytes = 0
-				}
-				bitmaskBits := bitmaskBits(bits)
-				pos := util.FirstBitPosition(bitmaskBits)
-				bitmaskBytes = bitmaskBytes | ((util.Uint64(v) << pos) & bitmaskBits)
-				if bitmask == "end" {
-					write(buf, endianness, util.Vtype(v, bitmaskBytes))
-				}
-				return true
-			}
-			return false
-		}
-		var writeString = func(v string) {
-			if hexOk {
-				switch hex {
-				case "uint64":
-					addr, _ := strconv.ParseUint(v[2:], 16, 64)
-					write(buf, endianness, addr)
-				case "uint32":
-					addr, _ := strconv.ParseUint(v[2:], 16, 32)
-					write(buf, endianness, uint32(addr))
-				case "uint16":
-					addr, _ := strconv.ParseUint(v[2:], 16, 16)
-					write(buf, endianness, uint16(addr))
-				case "uint8":
-					addr, _ := strconv.ParseUint(v[2:], 16, 8)
-					write(buf, endianness, uint8(addr))
-				}
-			} else {
-				write(buf, endianness, []uint8(v))
-			}
-		}
-		writeUint := func(v interface{}) {
-			if !writeBitmask(v) {
-				write(buf, endianness, v)
-			}
-		}
-		if lengthOk {
-			switch length {
-			case "uint8":
-				v := uint8(valueMirror.Len())
-				write(buf, endianness, v)
-			case "uint16":
-				v := uint16(valueMirror.Len())
-				write(buf, endianness, v)
-			case "uint32":
-				v := uint32(valueMirror.Len())
-				write(buf, endianness, v)
-			}
-		}
-		switch value := valueMirror.Interface().(type) {
-		case uint8, uint16, uint32, uint64:
-			writeUint(value)
-		case string:
-			writeString(value)
-		case []string:
-			for _, v := range value {
-				writeString(v)
-			}
-		default:
-			switch {
-			case valueMirror.Kind() == reflect.Ptr:
-				write(buf, endianness, serialize(value))
-			case valueMirror.Kind() == reflect.Slice && valueMirror.Len() > 0 && valueMirror.Index(0).Kind() == reflect.Ptr:
-				for i := 0; i < valueMirror.Len(); i++ {
-					write(buf, endianness, serialize(valueMirror.Index(i).Interface()))
-				}
-			default:
-				write(buf, endianness, value)
-			}
-		}
-	}
+	encode(buf, value)
 	return buf.Bytes()
 }
 
-func deserialize(buf *bytes.Buffer, response interface{}) {
-	mirror := reflect.ValueOf(response).Elem()
-	if (mirror.Kind() == reflect.Ptr) && mirror.IsNil() {
-		reflection.Init(response)
-		mirror = reflect.ValueOf(response).Elem().Elem()
+func Decode(payload []byte, response interface{}) {
+	value := reflect.ValueOf(response)
+	decode(bytes.NewBuffer(payload), value)
+}
+
+func encode(buf *bytes.Buffer, value reflect.Value) {
+	switch value.Kind() {
+	case reflect.Ptr:
+		encodePointer(buf, value)
+	case reflect.Struct:
+		encodeStruct(buf, value)
 	}
+}
+
+func encodeStruct(buf *bytes.Buffer, value reflect.Value) {
 	var bitmaskBytes uint64
-	for i := 0; i < mirror.NumField(); i++ {
-		valueMirror := mirror.Field(i)
-		typeMirror := mirror.Type().Field(i)
-		tags := typeMirror.Tag
-		hex, hexOk := reflection.GetTag(tags, "hex")
-		endianness, _ := reflection.GetTag(tags, "endianness")
-		length, lengthOk := reflection.GetTag(tags, "len")
-		bitmask, _ := reflection.GetTag(tags, "bitmask")
-		bits, bitsOk := reflection.GetTag(tags, "bits")
-		var setBitmask = func(v interface{}) bool {
-			if bitsOk {
-				if bitmask == "start" {
-					read(buf, endianness, v)
-					bitmaskBytes = util.Uint64(v)
-				}
-				bitmaskBits := bitmaskBits(bits)
-				pos := util.FirstBitPosition(bitmaskBits)
-				v := util.Vtype(v, bitmaskBytes&bitmaskBits>>pos)
-				valueMirror.Set(reflect.ValueOf(v).Convert(valueMirror.Type()))
-				return true
-			}
-			return false
-		}
-		readHexString := func() string {
-			readHex := func(v interface{}) string {
-				read(buf, endianness, v)
-				hexString, _ := util.UintToHexString(v)
-				return hexString
-			}
-			switch hex {
-			case "uint64":
-				var v uint64
-				return readHex(&v)
-			case "uint32":
-				var v uint32
-				return readHex(&v)
-			case "uint16":
-				var v uint16
-				return readHex(&v)
-			case "uint8":
-				var v uint8
-				return readHex(&v)
-			default:
-				log.Fatalf("Unsupported hex size: %s", hex)
-			}
-			return ""
-		}
-		var dynBufLen uint32
-		if lengthOk {
-			switch length {
-			case "uint8":
-				var v uint8
-				read(buf, endianness, &v)
-				dynBufLen = uint32(v)
-			case "uint16":
-				var v uint16
-				read(buf, endianness, &v)
-				dynBufLen = uint32(v)
-			case "uint32":
-				var v uint32
-				read(buf, endianness, &v)
-				dynBufLen = v
-			}
-		}
-		setUint := func(v interface{}) {
-			if !setBitmask(v) {
-				read(buf, endianness, v)
-				valueMirror.Set(reflect.ValueOf(v).Elem().Convert(valueMirror.Type()))
-			}
-		}
-		setSlice := func() {
-			if valueMirror.CanSet() {
-				valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
-				for i := 0; i < int(dynBufLen); i++ {
-					sliceElemMirror := valueMirror.Index(i)
-					el := reflect.New(sliceElemMirror.Type().Elem())
-					v := el.Interface()
-					deserialize(buf, v)
-					sliceElemMirror.Set(reflect.ValueOf(v))
-				}
-			}
-		}
-		setArray := func() {
-			for i := 0; i < valueMirror.Len(); i++ {
-				sliceElemMirror := valueMirror.Index(i)
-				el := reflect.New(sliceElemMirror.Type())
-				v := el.Interface()
-				read(buf, endianness, v)
-				sliceElemMirror.Set(reflect.ValueOf(v).Elem())
-			}
-		}
-		switch valueMirror.Interface().(type) {
-		case string:
-			if hexOk {
-				valueMirror.SetString(readHexString())
-			} else {
-				b := make([]uint8, dynBufLen, dynBufLen)
-				read(buf, endianness, b)
-				valueMirror.SetString(string(b))
-			}
-		case []string:
-			if valueMirror.CanSet() {
-				valueMirror.Set(reflect.MakeSlice(valueMirror.Type(), int(dynBufLen), int(dynBufLen)))
-				for i := 0; i < int(dynBufLen); i++ {
-					sliceElemMirror := valueMirror.Index(i)
-					hexString := readHexString()
-					sliceElemMirror.SetString(hexString)
-				}
-			}
-		case []uint8:
-			if lengthOk {
-				v := make([]uint8, dynBufLen)
-				read(buf, endianness, v)
-				valueMirror.Set(reflect.ValueOf(v))
-			} else {
-				valueMirror.Set(reflect.ValueOf(buf.Bytes()))
-			}
-		case []uint16:
-			var v []uint16
-			if lengthOk {
-				v = make([]uint16, dynBufLen)
-			} else {
-				v = make([]uint16, len(buf.Bytes())/2)
-			}
-			read(buf, endianness, v)
-			valueMirror.Set(reflect.ValueOf(v))
-		default:
-			switch valueMirror.Kind() {
-			case reflect.Uint8:
-				var v uint8
-				setUint(&v)
-			case reflect.Uint16:
-				var v uint16
-				setUint(&v)
-			case reflect.Uint32:
-				var v uint32
-				setUint(&v)
-			case reflect.Uint64:
-				var v uint64
-				setUint(&v)
-			case reflect.Ptr:
-				el := reflect.New(valueMirror.Type().Elem())
-				v := el.Interface()
-				if valueMirror.CanSet() {
-					valueMirror.Set(el)
-				}
-				deserialize(buf, v)
-			case reflect.Slice:
-				setSlice()
-			case reflect.Array:
-				setArray()
-			default:
-				el := reflect.New(valueMirror.Type())
-				v := el.Interface()
-				read(buf, endianness, v)
-				if valueMirror.CanSet() {
-					valueMirror.Set(reflect.ValueOf(v).Elem())
-				}
-			}
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		fieldType := value.Type().Field(i)
+		tags := newTags(fieldType)
+		switch field.Kind() {
+		case reflect.Ptr:
+			encodePointer(buf, field)
+		case reflect.String:
+			encodeString(buf, field, tags)
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			encodeUint(buf, field, tags, &bitmaskBytes)
+		case reflect.Array:
+			encodeArray(buf, field, tags)
+		case reflect.Slice:
+			encodeSlice(buf, field, tags)
+		case reflect.Interface:
+			encodePointer(buf, field)
 		}
 	}
+}
+
+func encodeSlice(buf *bytes.Buffer, value reflect.Value, tags *tags) {
+	length := value.Len()
+	writeDynamicLength(buf, length, tags)
+	for i := 0; i < length; i++ {
+		sliceElement := value.Index(i)
+		switch sliceElement.Kind() {
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			encodeUint(buf, sliceElement, tags, nil)
+		case reflect.String:
+			encodeString(buf, sliceElement, tags)
+		case reflect.Ptr:
+			encodePointer(buf, sliceElement)
+		case reflect.Struct:
+			encodeStruct(buf, sliceElement)
+		}
+	}
+}
+
+func encodeArray(buf *bytes.Buffer, value reflect.Value, tags *tags) {
+	write(buf, tags.endianness.value, value.Interface())
+}
+
+func encodeString(buf *bytes.Buffer, value reflect.Value, tags *tags) {
+	v := value.Interface().(string)
+	if tags.hex.nonEmpty() {
+		size, _ := strconv.Atoi(tags.hex.value)
+		typ := types[size]
+		addr, _ := strconv.ParseUint(v[2:], 16, size*8)
+		v := convertTo(addr, typ)
+		write(buf, tags.endianness.value, v)
+	} else {
+		writeDynamicLength(buf, len(v), tags)
+		write(buf, tags.endianness.value, []uint8(v))
+	}
+}
+
+func encodeUint(buf *bytes.Buffer, value reflect.Value, tags *tags, bitmaskBytes *uint64) {
+	if tags.bits.nonEmpty() {
+		if tags.bitmask.value == "start" {
+			*bitmaskBytes = 0
+		}
+		bitmaskBits := bitmaskBits(tags.bits.value)
+		pos := util.FirstBitPosition(bitmaskBits)
+		v := ((util.Uint64(value) << pos) & bitmaskBits)
+		*bitmaskBytes = (*bitmaskBytes) | v
+		if tags.bitmask.value == "end" {
+			v := convertTo(*bitmaskBytes, value.Type())
+			write(buf, tags.endianness.value, v)
+		}
+	} else {
+		v := value.Interface()
+		write(buf, tags.endianness.value, v)
+	}
+}
+
+func encodePointer(buf *bytes.Buffer, value reflect.Value) {
+	encode(buf, value.Elem())
+}
+
+func decode(buf *bytes.Buffer, value reflect.Value) {
+	switch value.Kind() {
+	case reflect.Ptr:
+		decodePointer(buf, value)
+	case reflect.Struct:
+		decodeStruct(buf, value)
+	}
+}
+
+func decodePointer(buf *bytes.Buffer, value reflect.Value) {
+	if value.IsNil() {
+		element := reflect.New(value.Type().Elem())
+		if value.CanSet() {
+			value.Set(element)
+		}
+	}
+	decode(buf, value.Elem())
+}
+
+func decodeStruct(buf *bytes.Buffer, value reflect.Value) {
+	var bitmaskBytes uint64
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		fieldType := value.Type().Field(i)
+		tags := newTags(fieldType)
+		switch field.Kind() {
+		case reflect.Ptr:
+			decodePointer(buf, field)
+		case reflect.String:
+			decodeString(buf, field, tags)
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			decodeUint(buf, field, tags, &bitmaskBytes)
+		case reflect.Array:
+			decodeArray(buf, field, tags)
+		case reflect.Slice:
+			decodeSlice(buf, field, tags)
+		}
+	}
+}
+
+func decodeSlice(buf *bytes.Buffer, value reflect.Value, tags *tags) {
+	length := readDynamicLength(buf, tags)
+	value.Set(reflect.MakeSlice(value.Type(), length, length))
+	for i := 0; i < length; i++ {
+		sliceElement := value.Index(i)
+		switch sliceElement.Kind() {
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			decodeUint(buf, sliceElement, tags, nil)
+		case reflect.String:
+			decodeString(buf, sliceElement, tags)
+		case reflect.Ptr:
+			decodePointer(buf, sliceElement)
+		case reflect.Struct:
+			decodeStruct(buf, sliceElement)
+		}
+	}
+}
+
+func decodeArray(buf *bytes.Buffer, value reflect.Value, tags *tags) {
+	for i := 0; i < value.Len(); i++ {
+		arrayElement := value.Index(i)
+		arrayElementNew := reflect.New(arrayElement.Type())
+		v := arrayElementNew.Interface()
+		read(buf, tags.endianness.value, v)
+		arrayElement.Set(reflect.ValueOf(v).Elem())
+	}
+}
+
+func decodeUint(buf *bytes.Buffer, value reflect.Value, tags *tags, bitmaskBytes *uint64) {
+	if value.CanAddr() {
+		ptr := value.Addr()
+		if tags.bits.nonEmpty() {
+			if tags.bitmask.value == "start" {
+				read(buf, tags.endianness.value, ptr.Interface())
+				*bitmaskBytes = util.Uint64(ptr)
+			}
+			bitmaskBits := bitmaskBits(tags.bits.value)
+			pos := util.FirstBitPosition(bitmaskBits)
+			v := (*bitmaskBytes & bitmaskBits) >> pos
+			value.Set(reflect.ValueOf(v).Convert(value.Type()))
+		} else {
+			v := ptr.Interface()
+			read(buf, tags.endianness.value, v)
+			value.Set(reflect.ValueOf(value.Interface()).Convert(value.Type()))
+		}
+	} else {
+		panic("Unaddressable uint value")
+	}
+}
+
+func decodeString(buf *bytes.Buffer, value reflect.Value, tags *tags) {
+	if tags.hex.nonEmpty() {
+		size, _ := strconv.Atoi(tags.hex.value)
+		if typ, ok := types[size]; ok {
+			v := reflect.New(typ)
+			ptr := v.Interface()
+			read(buf, tags.endianness.value, ptr)
+			hexString, _ := util.UintToHexString(v.Elem().Interface())
+			value.SetString(hexString)
+		} else {
+			log.Fatalf("Unsupported hex size: %s", tags.hex.value)
+		}
+	} else {
+		length := readDynamicLength(buf, tags)
+		b := make([]uint8, length, length)
+		read(buf, tags.endianness.value, b)
+		value.SetString(string(b))
+	}
+}
+
+func readDynamicLength(buf *bytes.Buffer, tags *tags) int {
+	if tags.size.nonEmpty() {
+		size, _ := strconv.Atoi(tags.size.value)
+		if typ, ok := types[size]; ok {
+			v := reflect.New(typ)
+			ptr := v.Interface()
+			read(buf, tags.endianness.value, ptr)
+			return convertTo(v.Elem().Interface(), intType).(int)
+		}
+		panic(fmt.Sprintf("Unsupported length: %s", tags.size.value))
+	} else {
+		return len(buf.Bytes())
+	}
+}
+
+func writeDynamicLength(buf *bytes.Buffer, length int, tags *tags) {
+	if tags.size.nonEmpty() {
+		size, _ := strconv.Atoi(tags.size.value)
+		if typ, ok := types[size]; ok {
+			v := reflect.New(typ).Elem()
+			v.Set(valueConvertTo(reflect.ValueOf(length), typ))
+			write(buf, tags.endianness.value, v.Interface())
+		}
+	}
+}
+
+type tag struct {
+	value string
+}
+
+func (t *tag) nonEmpty() bool {
+	return len(t.value) > 0
+}
+
+type tags struct {
+	hex        *tag
+	endianness *tag
+	size       *tag
+	bitmask    *tag
+	bits       *tag
+}
+
+func newTags(field reflect.StructField) *tags {
+	hex := &tag{field.Tag.Get("hex")}
+	endianness := &tag{field.Tag.Get("endianness")}
+	size := &tag{field.Tag.Get("size")}
+	bitmask := &tag{field.Tag.Get("bitmask")}
+	bits := &tag{field.Tag.Get("bits")}
+	return &tags{hex: hex,
+		endianness: endianness,
+		size:       size,
+		bitmask:    bitmask,
+		bits:       bits,
+	}
+}
+
+func convertTo(v interface{}, typ reflect.Type) interface{} {
+	value := reflect.ValueOf(v)
+	return valueConvertTo(value, typ).Interface()
+}
+
+func valueConvertTo(value reflect.Value, typ reflect.Type) reflect.Value {
+	return value.Convert(typ)
 }
 
 func bitmaskBits(value string) uint64 {

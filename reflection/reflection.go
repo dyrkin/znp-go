@@ -1,8 +1,9 @@
 package reflection
 
 import (
-	"log"
 	"reflect"
+
+	"github.com/dyrkin/znp-go/util"
 )
 
 func Copy(n interface{}) interface{} {
@@ -16,7 +17,7 @@ func Copy(n interface{}) interface{} {
 		copy := reflect.New(e.Type())
 		return copy.Interface()
 	}
-	log.Fatalf("Unsupported value: %#v", n)
+	util.Panicf("reflection.Copy: Unsupported value: %#v", n)
 	return nil
 }
 
