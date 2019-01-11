@@ -20,16 +20,3 @@ func Copy(n interface{}) interface{} {
 	util.Panicf("reflection.Copy: Unsupported value: %#v", n)
 	return nil
 }
-
-func Init(r interface{}) {
-	m := reflect.ValueOf(r).Elem()
-	el := reflect.New(m.Type().Elem())
-	if m.CanSet() {
-		m.Set(el)
-	}
-}
-
-func GetTag(tags reflect.StructTag, tagName string) (string, bool) {
-	v := tags.Get(tagName)
-	return v, v != ""
-}

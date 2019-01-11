@@ -26,13 +26,3 @@ func (s *MySuite) TestCopy(c *C) {
 
 	c.Assert(copy2, DeepEquals, Struct{})
 }
-
-func InitReturnType() (r *Struct) {
-	Init(&r)
-	return
-}
-
-func (s *MySuite) TestInit(c *C) {
-	res := InitReturnType()
-	c.Assert(res, DeepEquals, &Struct{})
-}

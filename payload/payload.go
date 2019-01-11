@@ -3,9 +3,7 @@ package payload
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io"
-	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -21,6 +19,7 @@ var types = map[int]reflect.Type{
 }
 
 var intType = reflect.TypeOf(int(0))
+var uint64Type = reflect.TypeOf(uint64(0))
 
 func Encode(request interface{}) []byte {
 	value := reflect.ValueOf(request)
@@ -109,7 +108,8 @@ func encodeUint(buf *bytes.Buffer, value reflect.Value, tags *tags, bitmaskBytes
 		}
 		bitmaskBits := bitmaskBits(tags.bits.value)
 		pos := util.FirstBitPosition(bitmaskBits)
-		v := ((util.Uint64(value) << pos) & bitmaskBits)
+		v := valueConvertTo(value, uint64Type).Interface().(uint64)
+		v = ((v << pos) & bitmaskBits)
 		*bitmaskBytes = (*bitmaskBytes) | v
 		if tags.bitmask.value == "end" {
 			v := convertTo(*bitmaskBytes, value.Type())
@@ -199,7 +199,7 @@ func decodeUint(buf *bytes.Buffer, value reflect.Value, tags *tags, bitmaskBytes
 		if tags.bits.nonEmpty() {
 			if tags.bitmask.value == "start" {
 				read(buf, tags.endianness.value, ptr.Interface())
-				*bitmaskBytes = util.Uint64(ptr)
+				*bitmaskBytes = valueConvertTo(value, uint64Type).Interface().(uint64)
 			}
 			bitmaskBits := bitmaskBits(tags.bits.value)
 			pos := util.FirstBitPosition(bitmaskBits)
@@ -225,7 +225,7 @@ func decodeString(buf *bytes.Buffer, value reflect.Value, tags *tags) {
 			hexString, _ := util.UintToHexString(v.Elem().Interface())
 			value.SetString(hexString)
 		} else {
-			log.Fatalf("Unsupported hex size: %s", tags.hex.value)
+			util.Panicf("Unsupported hex size: %s", tags.hex.value)
 		}
 	} else {
 		length := readDynamicLength(buf, tags)
@@ -244,7 +244,8 @@ func readDynamicLength(buf *bytes.Buffer, tags *tags) int {
 			read(buf, tags.endianness.value, ptr)
 			return convertTo(v.Elem().Interface(), intType).(int)
 		}
-		panic(fmt.Sprintf("Unsupported length: %s", tags.size.value))
+		util.Panicf("Unsupported length: %s", tags.size.value)
+		return 0
 	} else {
 		return len(buf.Bytes())
 	}
