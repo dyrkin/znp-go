@@ -39,16 +39,18 @@ func (s *MySuite) TestEncode1(c *C) {
 		Slice       []uint8
 		HexStrings  []string   `size:"1" hex:"2"`
 		StructSlice []*Struct2 `size:"1"`
+		UintSize    uint32     `bound:"3"`
+		UintSizeBe  uint32     `bound:"3" endianness:"be"`
 	}
 
 	bitmask := &Bitmask{6, 1, 0, 0, 1, 7, 1, 1}
 	str := &Struct{1, 2, bitmask, "0x0A0B", "hello world", [2]uint8{1, 2}, []uint8{3, 4},
-		[]string{"0xffaa", "0xaaff"}, []*Struct2{&Struct2{5}, &Struct2{6}}}
+		[]string{"0xffaa", "0xaaff"}, []*Struct2{&Struct2{5}, &Struct2{6}}, 1315, 1315}
 
 	payload := Encode(str)
 	spew.Dump(payload)
 	c.Assert(payload, DeepEquals, []uint8{1, 2, 6, 9, 0, 7, 3, 0x0B, 0x0A, 0x0b, 0x68, 0x65, 0x6c, 0x6c,
-		0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 1, 2, 3, 4, 2, 0xaa, 0xff, 0xff, 0xaa, 2, 5, 6})
+		0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 1, 2, 3, 4, 2, 0xaa, 0xff, 0xff, 0xaa, 2, 5, 6, 0x23, 0x05, 0, 0, 0x05, 0x23})
 }
 
 func (s *MySuite) TestEncode2(c *C) {
@@ -363,15 +365,18 @@ func (s *MySuite) TestDecodeStruct(c *C) {
 		StructSlice []*Struct3 `size:"1"`
 	}
 	type Struct struct {
-		V    string `hex:"2"`
-		S    *Struct2
-		Ui16 uint16
+		V          string `hex:"2"`
+		S          *Struct2
+		Ui16       uint16
+		UintSize   uint32 `bound:"3"`
+		UintSizeBe uint32 `bound:"3" endianness:"be"`
 	}
 
 	bitmask := &Bitmask{6, 1, 0, 0, 1, 7, 1, 1}
 
-	payload := []uint8{1, 2, 1, 2, 1, 2, 6, 9, 0, 7, 3, 5, 6, 2, 7, 8, 2, 1, 2, 3, 4, 1, 2}
-	str := &Struct{"0x0201", &Struct2{"0x0201", 0x201, bitmask, [2]uint8{5, 6}, []uint8{7, 8}, []*Struct3{&Struct3{1, 2}, &Struct3{3, 4}}}, 0x201}
+	payload := []uint8{1, 2, 1, 2, 1, 2, 6, 9, 0, 7, 3, 5, 6, 2, 7, 8, 2, 1, 2, 3, 4, 1, 2, 0x23, 0x05, 0, 0, 0x05, 0x23}
+	str := &Struct{"0x0201", &Struct2{"0x0201", 0x201, bitmask, [2]uint8{5, 6}, []uint8{7, 8},
+		[]*Struct3{&Struct3{1, 2}, &Struct3{3, 4}}}, 0x201, 1315, 1315}
 	res := &Struct{}
 	Decode(payload, res)
 

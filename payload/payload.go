@@ -115,6 +115,21 @@ func encodeUint(buf *bytes.Buffer, value reflect.Value, tags *tags, bitmaskBytes
 			v := convertTo(*bitmaskBytes, value.Type())
 			write(buf, tags.endianness.value, v)
 		}
+
+	} else if tags.bound.nonEmpty() {
+		size, _ := strconv.Atoi(tags.bound.value)
+		v := make([]uint8, size, size)
+		uintVal := value.Uint()
+		endianness := tags.endianness.value
+		for i := 0; i < size; i++ {
+			if endianness == "be" {
+				v[size-i-1] = byte(uintVal >> byte(i*8))
+			} else {
+				v[i] = byte(uintVal >> byte(i*8))
+			}
+
+		}
+		write(buf, tags.endianness.value, v)
 	} else {
 		v := value.Interface()
 		write(buf, tags.endianness.value, v)
@@ -204,11 +219,24 @@ func decodeUint(buf *bytes.Buffer, value reflect.Value, tags *tags, bitmaskBytes
 			bitmaskBits := bitmaskBits(tags.bits.value)
 			pos := util.FirstBitPosition(bitmaskBits)
 			v := (*bitmaskBytes & bitmaskBits) >> pos
-			value.Set(reflect.ValueOf(v).Convert(value.Type()))
+			value.Set(valueConvertTo(reflect.ValueOf(v), value.Type()))
+		} else if tags.bound.nonEmpty() {
+			size, _ := strconv.Atoi(tags.bound.value)
+			a := make([]uint8, size, size)
+			endianness := tags.endianness.value
+			read(buf, endianness, a)
+			v := uint64(0)
+			for i := 0; i < size; i++ {
+				if endianness == "be" {
+					v = v | (uint64(a[size-i-1]) << byte(i*8))
+				} else {
+					v = v | (uint64(a[i]) << byte(i*8))
+				}
+			}
+			value.Set(valueConvertTo(reflect.ValueOf(v), value.Type()))
 		} else {
 			v := ptr.Interface()
 			read(buf, tags.endianness.value, v)
-			value.Set(reflect.ValueOf(value.Interface()).Convert(value.Type()))
 		}
 	} else {
 		panic("Unaddressable uint value")
@@ -276,6 +304,7 @@ type tags struct {
 	size       *tag
 	bitmask    *tag
 	bits       *tag
+	bound      *tag
 }
 
 func newTags(field reflect.StructField) *tags {
@@ -284,11 +313,13 @@ func newTags(field reflect.StructField) *tags {
 	size := &tag{field.Tag.Get("size")}
 	bitmask := &tag{field.Tag.Get("bitmask")}
 	bits := &tag{field.Tag.Get("bits")}
+	bound := &tag{field.Tag.Get("bound")}
 	return &tags{hex: hex,
 		endianness: endianness,
 		size:       size,
 		bitmask:    bitmask,
 		bits:       bits,
+		bound:      bound,
 	}
 }
 
