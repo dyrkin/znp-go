@@ -1,6 +1,9 @@
 package payload
 
 import (
+	"bytes"
+	"encoding/gob"
+	"encoding/json"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -399,4 +402,109 @@ func (s *MySuite) TestDecodeFunctionReturnValue(c *C) {
 	res := Fn()
 
 	c.Assert(res, DeepEquals, str)
+}
+
+type BenchInner struct {
+	F1 uint8
+}
+
+type Bench struct {
+	F0  uint8
+	F1  uint16 `endianness:"be"`
+	F2  uint16
+	F3  uint32
+	F4  [8]byte
+	F5  [16]byte
+	F6  [18]byte
+	F7  [32]byte
+	F8  [42]byte
+	F9  [100]byte
+	F10 string        `hex:"8"` // string '0x00124b00019c2ee9'
+	F11 []uint16      `size:"1"`
+	F12 []byte        `size:"1"`
+	F13 []*BenchInner `size:"1"`
+	F14 *BenchInner
+	F15 string `hex:"4"` // string '0x00124b00'
+	F16 string `size:"1"`
+}
+
+func newBenchStruct() interface{} {
+	slice := []*BenchInner{
+		&BenchInner{200},
+		&BenchInner{100}}
+
+	return &Bench{F0: 1, F1: 2, F2: 2, F3: 3, F10: "0x00124b00019c2ee9",
+		F11: []uint16{4, 5}, F12: []byte{1, 2, 3},
+		F13: slice, F14: &BenchInner{1}, F15: "0x00124b00",
+		F16: "hello world"}
+}
+
+func Benchmark_Gob(b *testing.B) {
+	v := newBenchStruct()
+
+	buffer := new(bytes.Buffer)
+	codec := gob.NewEncoder(buffer)
+	codec.Encode(&v)
+
+	b.Run("encode", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			gob.NewEncoder(new(bytes.Buffer)).Encode(&v)
+		}
+	})
+
+	b.Run("decode", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		var out Bench
+		for n := 0; n < b.N; n++ {
+			gob.NewDecoder(buffer).Decode(&out)
+		}
+	})
+}
+
+func Benchmark_Payload(b *testing.B) {
+	v := newBenchStruct()
+
+	payload := Encode(v)
+
+	b.Run("encode", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			Encode(v)
+		}
+	})
+
+	b.Run("decode", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		var out *Bench
+		for n := 0; n < b.N; n++ {
+			Decode(payload, out)
+		}
+	})
+}
+
+func Benchmark_JSON(b *testing.B) {
+	v := newBenchStruct()
+	enc, _ := json.Marshal(&v)
+
+	b.Run("encode", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			json.Marshal(&v)
+		}
+	})
+
+	b.Run("decode", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		var out Bench
+		for n := 0; n < b.N; n++ {
+			json.Unmarshal(enc, &out)
+		}
+	})
 }
