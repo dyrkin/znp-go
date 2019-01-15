@@ -428,7 +428,7 @@ type Bench struct {
 	F16 string `size:"1"`
 }
 
-func newBenchStruct() interface{} {
+func newBenchStruct() *Bench {
 	slice := []*BenchInner{
 		&BenchInner{200},
 		&BenchInner{100}}
@@ -467,7 +467,7 @@ func Benchmark_Gob(b *testing.B) {
 func Benchmark_Payload(b *testing.B) {
 	v := newBenchStruct()
 
-	payload := Encode(v)
+	// payload := Encode(v)
 
 	b.Run("encode", func(b *testing.B) {
 		b.ReportAllocs()
@@ -477,14 +477,14 @@ func Benchmark_Payload(b *testing.B) {
 		}
 	})
 
-	b.Run("decode", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		var out *Bench
-		for n := 0; n < b.N; n++ {
-			Decode(payload, out)
-		}
-	})
+	// b.Run("decode", func(b *testing.B) {
+	// 	b.ReportAllocs()
+	// 	b.ResetTimer()
+	// 	var out *Bench
+	// 	for n := 0; n < b.N; n++ {
+	// 		Decode(payload, out)
+	// 	}
+	// })
 }
 
 func Benchmark_JSON(b *testing.B) {

@@ -31,19 +31,26 @@ type tags struct {
 	bound      tag
 }
 
+var emptyTag = &tags{}
+
 func newTags(field reflect.StructField) *tags {
-	hex := tag(field.Tag.Get("hex"))
-	endianness := tag(field.Tag.Get("endianness"))
-	size := tag(field.Tag.Get("size"))
-	bitmask := tag(field.Tag.Get("bitmask"))
-	bits := tag(field.Tag.Get("bits"))
-	bound := tag(field.Tag.Get("bound"))
-	return &tags{hex: hex,
-		endianness: endianness,
-		size:       size,
-		bitmask:    bitmask,
-		bits:       bits,
-		bound:      bound,
+	t := field.Tag
+	if t != "" {
+		hex := tag(t.Get("hex"))
+		endianness := tag(t.Get("endianness"))
+		size := tag(t.Get("size"))
+		bitmask := tag(t.Get("bitmask"))
+		bits := tag(t.Get("bits"))
+		bound := tag(t.Get("bound"))
+		return &tags{hex: hex,
+			endianness: endianness,
+			size:       size,
+			bitmask:    bitmask,
+			bits:       bits,
+			bound:      bound,
+		}
+	} else {
+		return emptyTag
 	}
 }
 
