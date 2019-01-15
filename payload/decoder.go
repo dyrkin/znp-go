@@ -80,44 +80,33 @@ func (d *decoder) slice(value reflect.Value, tags *tags) {
 }
 
 func (d *decoder) array(value reflect.Value, tags *tags) {
-	for i := 0; i < value.Len(); i++ {
-		arrayElement := value.Index(i)
-		arrayElementNew := reflect.New(arrayElement.Type())
-		v := arrayElementNew.Interface()
-		d.read(tags.endianness, v)
-		arrayElement.Set(reflect.ValueOf(v).Elem())
+	if value.Len() > 0 {
+		size := int(value.Index(0).Type().Size())
+		for i := 0; i < value.Len(); i++ {
+			arrayElem := value.Index(i)
+			v := d.readUint(tags.endianness, size)
+			arrayElem.SetUint(v)
+		}
 	}
 }
 
 func (d *decoder) uint(value reflect.Value, tags *tags, bitmaskBytes *uint64) {
 	if value.CanAddr() {
-		ptr := value.Addr()
 		if tags.bits.nonEmpty() {
 			if tags.bitmask == "start" {
-				d.read(tags.endianness, ptr.Interface())
-				*bitmaskBytes = value.Uint()
+				*bitmaskBytes = d.readUint(tags.endianness, int(value.Type().Size()))
 			}
 			bitmaskBits := bitmaskBits(tags.bits)
 			pos := util.FirstBitPosition(bitmaskBits)
 			v := (*bitmaskBytes & bitmaskBits) >> pos
-			value.Set(valueConvertTo(reflect.ValueOf(v), value.Type()))
+			value.SetUint(v)
 		} else if tags.bound.nonEmpty() {
 			size, _ := strconv.Atoi(string(tags.bound))
-			a := make([]uint8, size, size)
-			endianness := tags.endianness
-			d.read(endianness, a)
-			v := uint64(0)
-			for i := 0; i < size; i++ {
-				if endianness == "be" {
-					v = v | (uint64(a[size-i-1]) << byte(i*8))
-				} else {
-					v = v | (uint64(a[i]) << byte(i*8))
-				}
-			}
-			value.Set(valueConvertTo(reflect.ValueOf(v), value.Type()))
+			v := d.readUint(tags.endianness, size)
+			value.SetUint(v)
 		} else {
-			v := ptr.Interface()
-			d.read(tags.endianness, v)
+			v := d.readUint(tags.endianness, int(value.Type().Size()))
+			value.SetUint(v)
 		}
 	} else {
 		panic("Unaddressable uint value")
@@ -127,15 +116,9 @@ func (d *decoder) uint(value reflect.Value, tags *tags, bitmaskBytes *uint64) {
 func (d *decoder) string(value reflect.Value, tags *tags) {
 	if tags.hex.nonEmpty() {
 		size, _ := strconv.Atoi(string(tags.hex))
-		if typ, ok := types[size]; ok {
-			v := reflect.New(typ)
-			ptr := v.Interface()
-			d.read(tags.endianness, ptr)
-			hexString, _ := util.UintToHexString(v.Elem().Interface())
-			value.SetString(hexString)
-		} else {
-			util.Panicf("Unsupported hex size: %s", tags.hex)
-		}
+		v := d.readUint(tags.endianness, size)
+		hexString, _ := util.UintToHexString(v, size)
+		value.SetString(hexString)
 	} else {
 		length := d.dynamicLength(tags)
 		b := make([]uint8, length, length)
@@ -147,14 +130,7 @@ func (d *decoder) string(value reflect.Value, tags *tags) {
 func (d *decoder) dynamicLength(tags *tags) int {
 	if tags.size.nonEmpty() {
 		size, _ := strconv.Atoi(string(tags.size))
-		if typ, ok := types[size]; ok {
-			v := reflect.New(typ)
-			ptr := v.Interface()
-			d.read(tags.endianness, ptr)
-			return int(v.Elem().Uint())
-		}
-		util.Panicf("Unsupported length: %s", tags.size)
-		return 0
+		return int(d.readUint(tags.endianness, size))
 	} else {
 		return len(d.buf.Bytes())
 	}
@@ -162,4 +138,37 @@ func (d *decoder) dynamicLength(tags *tags) int {
 
 func (d *decoder) read(endianness tag, v interface{}) {
 	binary.Read(d.buf, order(endianness), v)
+}
+
+func (d *decoder) read2(endianness tag, v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Uint8:
+		u, _ := d.buf.ReadByte()
+		v.SetUint(uint64(u))
+	case reflect.Uint16:
+		u := d.readUint(endianness, 2)
+		v.SetUint(u)
+	case reflect.Uint32:
+		u := d.readUint(endianness, 4)
+		v.SetUint(u)
+	case reflect.Uint64:
+		u := d.readUint(endianness, 8)
+		v.SetUint(u)
+	}
+}
+
+func (d *decoder) readUint(endianness tag, size int) uint64 {
+	var v uint64
+	if endianness == "be" {
+		for i := 0; i < size; i++ {
+			t, _ := d.buf.ReadByte()
+			v = v | uint64(t)<<byte((size-i-1)*8)
+		}
+	} else {
+		for i := 0; i < size; i++ {
+			t, _ := d.buf.ReadByte()
+			v = v | uint64(t)<<byte(i*8)
+		}
+	}
+	return v
 }

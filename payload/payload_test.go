@@ -450,7 +450,7 @@ func Benchmark_Gob(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			gob.NewEncoder(new(bytes.Buffer)).Encode(&v)
+			gob.NewEncoder(new(bytes.Buffer)).Encode(v)
 		}
 	})
 
@@ -489,13 +489,13 @@ func Benchmark_Payload(b *testing.B) {
 
 func Benchmark_JSON(b *testing.B) {
 	v := newBenchStruct()
-	enc, _ := json.Marshal(&v)
+	enc, _ := json.Marshal(v)
 
 	b.Run("encode", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			json.Marshal(&v)
+			json.Marshal(v)
 		}
 	})
 
