@@ -83,8 +83,7 @@ func (e *encoder) string(value reflect.Value, tags *tags) {
 		size, _ := strconv.Atoi(string(tags.hex))
 		typ := types[size]
 		addr, _ := strconv.ParseUint(v[2:], 16, size*8)
-		v := valueConvertTo(reflect.ValueOf(addr), typ)
-		e.write(tags.endianness, v)
+		e.writeUint(tags.endianness, addr, int(typ.Size()))
 	} else {
 		e.dynamicLength(len(v), tags)
 		e.write(tags.endianness, reflect.ValueOf([]uint8(v)))
@@ -93,21 +92,20 @@ func (e *encoder) string(value reflect.Value, tags *tags) {
 
 func (e *encoder) uint(value reflect.Value, tags *tags, bitmaskBytes *uint64) {
 	if tags.bits.nonEmpty() {
+		bytes := *bitmaskBytes
 		if tags.bitmask == "start" {
-			*bitmaskBytes = 0
+			bytes = 0
 		}
 		bitmaskBits := bitmaskBits(tags.bits)
 		pos := util.FirstBitPosition(bitmaskBits)
-		v := valueConvertTo(value, uint64Type).Uint()
-		v = ((v << pos) & bitmaskBits)
-		*bitmaskBytes = (*bitmaskBytes) | v
+		bytes = bytes | ((value.Uint() << pos) & bitmaskBits)
 		if tags.bitmask == "end" {
-			v := valueConvertTo(reflect.ValueOf(*bitmaskBytes), value.Type())
-			e.write(tags.endianness, v)
+			e.writeUint(tags.endianness, bytes, int(value.Type().Size()))
 		}
+		*bitmaskBytes = bytes
 	} else if tags.bound.nonEmpty() {
 		size, _ := strconv.Atoi(string(tags.bound))
-		e.writeUint(value.Uint(), size, tags.endianness)
+		e.writeUint(tags.endianness, value.Uint(), size)
 	} else {
 		e.write(tags.endianness, value)
 	}
@@ -121,8 +119,7 @@ func (e *encoder) dynamicLength(length int, tags *tags) {
 	if tags.size.nonEmpty() {
 		size, _ := strconv.Atoi(string(tags.size))
 		if typ, ok := types[size]; ok {
-			v := valueConvertTo(reflect.ValueOf(length), typ)
-			e.write(tags.endianness, v)
+			e.writeUint(tags.endianness, uint64(length), int(typ.Size()))
 		}
 	}
 }
@@ -132,11 +129,11 @@ func (e *encoder) write(endianness tag, v reflect.Value) {
 	case reflect.Uint8:
 		e.buf.WriteByte(uint8(v.Uint()))
 	case reflect.Uint16:
-		e.writeUint(v.Uint(), 2, endianness)
+		e.writeUint(endianness, v.Uint(), 2)
 	case reflect.Uint32:
-		e.writeUint(v.Uint(), 4, endianness)
+		e.writeUint(endianness, v.Uint(), 4)
 	case reflect.Uint64:
-		e.writeUint(v.Uint(), 8, endianness)
+		e.writeUint(endianness, v.Uint(), 8)
 	case reflect.Slice:
 		l := v.Len()
 		for i := 0; i < l; i++ {
@@ -145,7 +142,7 @@ func (e *encoder) write(endianness tag, v reflect.Value) {
 	}
 }
 
-func (e *encoder) writeUint(t uint64, size int, endianness tag) {
+func (e *encoder) writeUint(endianness tag, t uint64, size int) {
 	if endianness == "be" {
 		for i := 0; i < size; i++ {
 			e.buf.WriteByte(byte(t >> byte((size-i-1)*8)))

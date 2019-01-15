@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 var types = map[int]reflect.Type{
@@ -57,15 +56,17 @@ func valueConvertTo(value reflect.Value, typ reflect.Type) reflect.Value {
 	return value.Convert(typ)
 }
 
-func bitmaskBits(value tag) uint64 {
-	bitmask := string(value)
-	var bitmaskBits uint64
-	if strings.HasPrefix(string(value), "0x") {
-		bitmaskBits, _ = strconv.ParseUint(bitmask[2:], 16, len(bitmask[2:])*4)
-	} else if strings.HasPrefix(string(value), "0b") {
-		bitmaskBits, _ = strconv.ParseUint(bitmask[2:], 2, len(bitmask[2:]))
+func bitmaskBits(value tag) (bitmaskBits uint64) {
+	prefix := string(value[:2])
+	bitmask := string(value[2:])
+	if prefix == "0x" {
+		bitmaskBits, _ = strconv.ParseUint(bitmask, 16, len(bitmask)*4)
+		return
+	} else if prefix == "0b" {
+		bitmaskBits, _ = strconv.ParseUint(bitmask, 2, len(bitmask))
+		return
 	}
-	return bitmaskBits
+	panic("Unsupported prefix: " + prefix)
 }
 
 func order(endianness tag) binary.ByteOrder {

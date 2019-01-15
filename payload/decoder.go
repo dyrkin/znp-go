@@ -95,7 +95,7 @@ func (d *decoder) uint(value reflect.Value, tags *tags, bitmaskBytes *uint64) {
 		if tags.bits.nonEmpty() {
 			if tags.bitmask == "start" {
 				d.read(tags.endianness, ptr.Interface())
-				*bitmaskBytes = valueConvertTo(value, uint64Type).Interface().(uint64)
+				*bitmaskBytes = value.Uint()
 			}
 			bitmaskBits := bitmaskBits(tags.bits)
 			pos := util.FirstBitPosition(bitmaskBits)
@@ -151,7 +151,7 @@ func (d *decoder) dynamicLength(tags *tags) int {
 			v := reflect.New(typ)
 			ptr := v.Interface()
 			d.read(tags.endianness, ptr)
-			return valueConvertTo(v.Elem(), intType).Interface().(int)
+			return int(v.Elem().Uint())
 		}
 		util.Panicf("Unsupported length: %s", tags.size)
 		return 0
