@@ -140,23 +140,6 @@ func (d *decoder) read(endianness tag, v interface{}) {
 	binary.Read(d.buf, order(endianness), v)
 }
 
-func (d *decoder) read2(endianness tag, v reflect.Value) {
-	switch v.Kind() {
-	case reflect.Uint8:
-		u, _ := d.buf.ReadByte()
-		v.SetUint(uint64(u))
-	case reflect.Uint16:
-		u := d.readUint(endianness, 2)
-		v.SetUint(u)
-	case reflect.Uint32:
-		u := d.readUint(endianness, 4)
-		v.SetUint(u)
-	case reflect.Uint64:
-		u := d.readUint(endianness, 8)
-		v.SetUint(u)
-	}
-}
-
 func (d *decoder) readUint(endianness tag, size int) uint64 {
 	var v uint64
 	if endianness == "be" {

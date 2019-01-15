@@ -149,6 +149,12 @@ func main() {
 	}
 	PrintStruct(res)
 
+	res, err = z.UtilZclKeyEstSign([]uint8{1, 2})
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
 	time.Sleep(200 * time.Second)
 }
 

@@ -1522,6 +1522,63 @@ func (znp *Znp) UtilAssocGetWithAddr(extAddr string, nwkAddr string) (rsp *UtilA
 	return
 }
 
+type UtilBindAddEntry struct {
+	AddrMode    AddrMode
+	DstAddr     string `hex:"8"`
+	DstEndpoint uint8
+	ClusterIDs  []uint16 `size:"1"`
+}
+
+type BindEntry struct {
+	SrcEP         uint8
+	DstGroupMode  uint8
+	DstIdx        uint16
+	DstEP         uint8
+	ClusterIDList []uint16 `size:"1"`
+}
+
+type UtilBindAddEntryResponse struct {
+	BindEntry *BindEntry
+}
+
+//UtilBindAddEntry is a proxy call to the bindAddEntry() function
+func (znp *Znp) UtilBindAddEntry(addrMode AddrMode, dstAddr string, dstEndpoint uint8, clusterIds []uint16) (rsp *UtilBindAddEntryResponse, err error) {
+	req := &UtilBindAddEntry{AddrMode: addrMode, DstAddr: dstAddr, DstEndpoint: dstEndpoint, ClusterIDs: clusterIds}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x4D, req, &rsp)
+	return
+}
+
+type UtilZclKeyEstInitEst struct {
+	TaskID   uint8
+	SeqNum   uint8
+	EndPoint uint8
+	AddrMode AddrMode
+	Addr     string `hex:"8"`
+}
+
+//UtilZclKeyEstInitEst is a proxy call to zclGeneral_KeyEstablish_InitiateKeyEstablishment().
+func (znp *Znp) UtilZclKeyEstInitEst(taskId uint8, seqNum uint8, endPoint uint8, addrMode AddrMode, addr string) (rsp *StatusResponse, err error) {
+	req := &UtilZclKeyEstInitEst{TaskID: taskId, SeqNum: seqNum, EndPoint: endPoint, AddrMode: addrMode, Addr: addr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x80, req, &rsp)
+	return
+}
+
+type UtilZclKeyEstSign struct {
+	Input []uint8 `size:"1"`
+}
+
+type UtilZclKeyEstSignResponse struct {
+	Status Status
+	Key    [42]uint8
+}
+
+//UtilZclKeyEstSign is a proxy call to zclGeneral_KeyEstablishment_ECDSASign().
+func (znp *Znp) UtilZclKeyEstSign(input []uint8) (rsp *UtilZclKeyEstSignResponse, err error) {
+	req := &UtilZclKeyEstSign{Input: input}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x81, req, &rsp)
+	return
+}
+
 func init() {
 	//AF
 	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x80}] = &AfDataConfirm{}
