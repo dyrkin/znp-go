@@ -442,9 +442,9 @@ func newBenchStruct() *Bench {
 func Benchmark_Gob(b *testing.B) {
 	v := newBenchStruct()
 
-	buffer := new(bytes.Buffer)
-	codec := gob.NewEncoder(buffer)
-	codec.Encode(&v)
+	buffer := &bytes.Buffer{}
+	gob.NewEncoder(buffer).Encode(v)
+	payload := buffer.Bytes()
 
 	b.Run("encode", func(b *testing.B) {
 		b.ReportAllocs()
@@ -457,9 +457,9 @@ func Benchmark_Gob(b *testing.B) {
 	b.Run("decode", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
-		var out Bench
+		out := &Bench{}
 		for n := 0; n < b.N; n++ {
-			gob.NewDecoder(buffer).Decode(&out)
+			gob.NewDecoder(bytes.NewBuffer(payload)).Decode(out)
 		}
 	})
 }
@@ -467,7 +467,7 @@ func Benchmark_Gob(b *testing.B) {
 func Benchmark_Payload(b *testing.B) {
 	v := newBenchStruct()
 
-	// payload := Encode(v)
+	payload := Encode(v)
 
 	b.Run("encode", func(b *testing.B) {
 		b.ReportAllocs()
@@ -477,14 +477,14 @@ func Benchmark_Payload(b *testing.B) {
 		}
 	})
 
-	// b.Run("decode", func(b *testing.B) {
-	// 	b.ReportAllocs()
-	// 	b.ResetTimer()
-	// 	var out *Bench
-	// 	for n := 0; n < b.N; n++ {
-	// 		Decode(payload, out)
-	// 	}
-	// })
+	b.Run("decode", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		out := &Bench{}
+		for n := 0; n < b.N; n++ {
+			Decode(payload, out)
+		}
+	})
 }
 
 func Benchmark_JSON(b *testing.B) {
@@ -502,9 +502,9 @@ func Benchmark_JSON(b *testing.B) {
 	b.Run("decode", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
-		var out Bench
+		out := &Bench{}
 		for n := 0; n < b.N; n++ {
-			json.Unmarshal(enc, &out)
+			json.Unmarshal(enc, out)
 		}
 	})
 }
