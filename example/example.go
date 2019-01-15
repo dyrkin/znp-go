@@ -137,6 +137,18 @@ func main() {
 	}
 	PrintStruct(res)
 
+	res, err = z.UtilAssocFindDevice(1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
+	res, err = z.UtilAssocGetWithAddr("0x0000000000000000", "0x25cc")
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
 	time.Sleep(200 * time.Second)
 }
 

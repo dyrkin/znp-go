@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/sys/unix"
+
 	unpi "github.com/dyrkin/unpi-go"
 
 	"github.com/dyrkin/znp-go/payload"
@@ -175,6 +177,9 @@ func (znp *Znp) incomingLoop() {
 		frame, err := znp.u.ReadFrame()
 		if err != nil {
 			znp.Errors <- err
+			if err == unix.ENXIO {
+				time.Sleep(5 * time.Second)
+			}
 		} else {
 			znp.inbound <- frame
 			if znp.logFrames {

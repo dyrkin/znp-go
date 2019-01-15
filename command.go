@@ -181,6 +181,18 @@ const (
 	ON  Mode = 1
 )
 
+type Relation uint8
+
+const (
+	Parent Relation = iota
+	ChildRfd
+	ChildRfdRxIdle
+	ChildFfd
+	ChildFfdRxIdle
+	Neighbor
+	Other
+)
+
 type StatusResponse struct {
 	Status Status
 }
@@ -1333,13 +1345,180 @@ func (znp *Znp) UtilSrcMatchCheckSrcAddr(addrMode AddrMode, address string, panI
 }
 
 type UtilSrcMatchAckAllPending struct {
-	Action Action
+	Option Action
 }
 
 //UtilSrcMatchAckAllPending is used to enable/disable acknowledging all packets with pending bit set.
-func (znp *Znp) UtilSrcMatchAckAllPending(action Action) (rsp *StatusResponse, err error) {
-	req := &UtilSrcMatchAckAllPending{Action: action}
+func (znp *Znp) UtilSrcMatchAckAllPending(option Action) (rsp *StatusResponse, err error) {
+	req := &UtilSrcMatchAckAllPending{Option: option}
 	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x24, req, &rsp)
+	return
+}
+
+type UtilSrcMatchCheckAllPendingResponse struct {
+	Status Status
+	Value  uint8
+}
+
+//UtilSrcMatchCheckAllPending is used to check if acknowledging all packets with pending bit set is enabled.
+func (znp *Znp) UtilSrcMatchCheckAllPending() (rsp *UtilSrcMatchCheckAllPendingResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x25, nil, &rsp)
+	return
+}
+
+type UtilAddrMgrExtAddrLookup struct {
+	ExtAddr string `hex:"8"`
+}
+
+type UtilAddrMgrExtAddrLookupResponse struct {
+	NwkAddr string `hex:"2"`
+}
+
+//UtilAddrMgrExtAddrLookup is a proxy call to the AddrMgrEntryLookupExt() function.
+func (znp *Znp) UtilAddrMgrExtAddrLookup(extAddr string) (rsp *UtilAddrMgrExtAddrLookupResponse, err error) {
+	req := &UtilAddrMgrExtAddrLookup{ExtAddr: extAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x40, req, &rsp)
+	return
+}
+
+type UtilAddrMgrAddrLookup struct {
+	NwkAddr string `hex:"2"`
+}
+
+type UtilAddrMgrAddrLookupResponse struct {
+	ExtAddr string `hex:"8"`
+}
+
+//UtilAddrMgrAddrLookup is a proxy call to the AddrMgrEntryLookupNwk() function.
+func (znp *Znp) UtilAddrMgrAddrLookup(nwkAddr string) (rsp *UtilAddrMgrAddrLookupResponse, err error) {
+	req := &UtilAddrMgrAddrLookup{NwkAddr: nwkAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x41, req, &rsp)
+	return
+}
+
+type UtilApsmeLinkKeyDataGet struct {
+	ExtAddr string `hex:"8"`
+}
+
+type UtilApsmeLinkKeyDataGetResponse struct {
+	Status    Status
+	SecKey    [16]uint8
+	TxFrmCntr uint32
+	RxFrmCntr uint32
+}
+
+//UtilApsmeLinkKeyDataGet retrieves APS link key data, Tx and Rx frame counters
+func (znp *Znp) UtilApsmeLinkKeyDataGet(extAddr string) (rsp *UtilApsmeLinkKeyDataGetResponse, err error) {
+	req := &UtilApsmeLinkKeyDataGet{ExtAddr: extAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x44, req, &rsp)
+	return
+}
+
+type UtilApsmeLinkKeyNvIdGet struct {
+	ExtAddr string `hex:"8"`
+}
+
+type UtilApsmeLinkKeyNvIdGetResponse struct {
+	Status      Status
+	LinkKeyNvId uint16
+}
+
+//UtilApsmeLinkKeyNvIdGet is a proxy call to the APSME_LinkKeyNvIdGet() function.
+func (znp *Znp) UtilApsmeLinkKeyNvIdGet(extAddr string) (rsp *UtilApsmeLinkKeyNvIdGetResponse, err error) {
+	req := &UtilApsmeLinkKeyNvIdGet{ExtAddr: extAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x45, req, &rsp)
+	return
+}
+
+type UtilApsmeRequestKeyCmd struct {
+	PartnerAddr string `hex:"8"`
+}
+
+//UtilApsmeRequestKeyCmd is used to send a request key to the Trust Center from an originator device who
+//wants to exchange messages with a partner device.
+func (znp *Znp) UtilApsmeRequestKeyCmd(partnerAddr string) (rsp *StatusResponse, err error) {
+	req := &UtilApsmeRequestKeyCmd{PartnerAddr: partnerAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x4B, req, &rsp)
+	return
+}
+
+type UtilAssocCount struct {
+	StartRelation Relation
+	EndRelation   Relation
+}
+
+type UtilAssocCountResponse struct {
+	Count uint16
+}
+
+//UtilAssocCount is a proxy call to the AssocCount() function
+func (znp *Znp) UtilAssocCount(startRelation Relation, endRelation Relation) (rsp *UtilAssocCountResponse, err error) {
+	req := &UtilAssocCount{StartRelation: startRelation, EndRelation: endRelation}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x48, req, &rsp)
+	return
+}
+
+const (
+	InvalidNodeAddr = "0xFFFE"
+)
+
+type LinkInfo struct {
+	TxCounter uint8 // Counter of transmission success/failures
+	TxCost    uint8 // Average of sending rssi values if link staus is enabled
+	// i.e. NWK_LINK_STATUS_PERIOD is defined as non zero
+	RxLqi uint8 // average of received rssi values
+	// needs to be converted to link cost (1-7) before used
+	InKeySeqNum uint8  // security key sequence number
+	InFrmCntr   uint32 // security frame counter..
+	TxFailure   uint16 // higher values indicate more failures
+}
+
+type AgingEndDevice struct {
+	EndDevCfg     uint8
+	DeviceTimeout uint32
+}
+
+type Device struct {
+	ShortAddr      string `hex:"2"` // Short address of associated device, or invalid 0xfffe
+	AddrIdx        uint16 // Index from the address manager
+	NodeRelation   uint8
+	DevStatus      uint8 // bitmap of various status values
+	AssocCnt       uint8
+	Age            uint8
+	LinkInfo       *LinkInfo
+	EndDev         *AgingEndDevice
+	TimeoutCounter uint32
+	KeepaliveRcv   uint8
+}
+
+type UtilAssocFindDevice struct {
+	Number uint8
+}
+
+type UtilAssocFindDeviceResponse struct {
+	Device *Device
+}
+
+//UtilAssocFindDevice is a proxy call to the AssocFindDevice() function.
+func (znp *Znp) UtilAssocFindDevice(number uint8) (rsp *UtilAssocFindDeviceResponse, err error) {
+	req := &UtilAssocFindDevice{Number: number}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x49, req, &rsp)
+	return
+}
+
+type UtilAssocGetWithAddr struct {
+	ExtAddr string `hex:"8"`
+	NwkAddr string `hex:"2"`
+}
+
+type UtilAssocGetWithAddrResponse struct {
+	Device *Device
+}
+
+//UtilAssocGetWithAddr is a proxy call to the AssocGetWithAddress() function.
+func (znp *Znp) UtilAssocGetWithAddr(extAddr string, nwkAddr string) (rsp *UtilAssocGetWithAddrResponse, err error) {
+	req := &UtilAssocGetWithAddr{ExtAddr: extAddr, NwkAddr: nwkAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x4A, req, &rsp)
 	return
 }
 
