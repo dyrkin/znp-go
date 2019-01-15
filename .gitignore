@@ -1,1 +1,4 @@
 go.sum
+payload.test
+profile_cpu.out
+profile.svg
