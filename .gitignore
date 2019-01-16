@@ -2,3 +2,5 @@ go.sum
 payload.test
 profile_cpu.out
 profile.svg
+old.txt
+new.txt

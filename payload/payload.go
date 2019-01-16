@@ -22,41 +22,30 @@ func (t tag) nonEmpty() bool {
 	return len(t) > 0
 }
 
-type tags struct {
-	hex        tag
-	endianness tag
-	size       tag
-	bitmask    tag
-	bits       tag
-	bound      tag
+type tags reflect.StructTag
+
+func (t tags) hex() tag {
+	return tag(reflect.StructTag(t).Get("hex"))
 }
 
-var emptyTag = &tags{}
-
-func newTags(field reflect.StructField) *tags {
-	t := field.Tag
-	if t != "" {
-		hex := tag(t.Get("hex"))
-		endianness := tag(t.Get("endianness"))
-		size := tag(t.Get("size"))
-		bitmask := tag(t.Get("bitmask"))
-		bits := tag(t.Get("bits"))
-		bound := tag(t.Get("bound"))
-		return &tags{hex: hex,
-			endianness: endianness,
-			size:       size,
-			bitmask:    bitmask,
-			bits:       bits,
-			bound:      bound,
-		}
-	} else {
-		return emptyTag
-	}
+func (t tags) endianness() tag {
+	return tag(reflect.StructTag(t).Get("endianness"))
 }
 
-func convertTo(v interface{}, typ reflect.Type) interface{} {
-	value := reflect.ValueOf(v)
-	return valueConvertTo(value, typ).Interface()
+func (t tags) size() tag {
+	return tag(reflect.StructTag(t).Get("size"))
+}
+
+func (t tags) bitmask() tag {
+	return tag(reflect.StructTag(t).Get("bitmask"))
+}
+
+func (t tags) bits() tag {
+	return tag(reflect.StructTag(t).Get("bits"))
+}
+
+func (t tags) bound() tag {
+	return tag(reflect.StructTag(t).Get("bound"))
 }
 
 func valueConvertTo(value reflect.Value, typ reflect.Type) reflect.Value {

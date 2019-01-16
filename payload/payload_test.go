@@ -302,7 +302,7 @@ func (s *MySuite) TestEncodeDecode(c *C) {
 			PermitJoin:      100,
 		},
 	}
-	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F10: "0x00124b00019c2ee9",
+	test := &Test{F0: 1, F1: 2, F2: 2, F3: 3, F4: [8]byte{0, 1, 2, 3, 4, 5, 6, 7}, F10: "0x00124b00019c2ee9",
 		F11: []uint16{4, 5}, F12: []byte{1, 2, 3},
 		F13: networks, F14: &Capabilities{1, 0, 0, 1, 1, 1, 1, 0, 1, 0}, F15: "0x00124b00",
 		F16: "hello world"}
@@ -414,11 +414,6 @@ type Bench struct {
 	F2  uint16
 	F3  uint32
 	F4  [8]byte
-	F5  [16]byte
-	F6  [18]byte
-	F7  [32]byte
-	F8  [42]byte
-	F9  [100]byte
 	F10 string        `hex:"8"` // string '0x00124b00019c2ee9'
 	F11 []uint16      `size:"1"`
 	F12 []byte        `size:"1"`

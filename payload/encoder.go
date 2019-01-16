@@ -35,7 +35,7 @@ func (e *encoder) strukt(value reflect.Value) {
 	for i := 0; i < value.NumField(); i++ {
 		field := value.Field(i)
 		fieldType := value.Type().Field(i)
-		tags := newTags(fieldType)
+		tags := tags(fieldType.Tag)
 		switch field.Kind() {
 		case reflect.Ptr:
 			e.pointer(field)
@@ -53,7 +53,7 @@ func (e *encoder) strukt(value reflect.Value) {
 	}
 }
 
-func (e *encoder) slice(value reflect.Value, tags *tags) {
+func (e *encoder) slice(value reflect.Value, tags tags) {
 	length := value.Len()
 	e.dynamicLength(length, tags)
 	for i := 0; i < length; i++ {
@@ -71,43 +71,43 @@ func (e *encoder) slice(value reflect.Value, tags *tags) {
 	}
 }
 
-func (e *encoder) array(value reflect.Value, tags *tags) {
+func (e *encoder) array(value reflect.Value, tags tags) {
 	for i := 0; i < value.Len(); i++ {
-		e.write(tags.endianness, value.Index(i))
+		e.write(tags.endianness(), value.Index(i))
 	}
 }
 
-func (e *encoder) string(value reflect.Value, tags *tags) {
+func (e *encoder) string(value reflect.Value, tags tags) {
 	v := value.String()
-	if tags.hex.nonEmpty() {
-		size, _ := strconv.Atoi(string(tags.hex))
+	if tags.hex().nonEmpty() {
+		size, _ := strconv.Atoi(string(tags.hex()))
 		typ := types[size]
 		addr, _ := strconv.ParseUint(v[2:], 16, size*8)
-		e.writeUint(tags.endianness, addr, int(typ.Size()))
+		e.writeUint(tags.endianness(), addr, int(typ.Size()))
 	} else {
 		e.dynamicLength(len(v), tags)
-		e.write(tags.endianness, reflect.ValueOf([]uint8(v)))
+		e.write(tags.endianness(), reflect.ValueOf([]uint8(v)))
 	}
 }
 
-func (e *encoder) uint(value reflect.Value, tags *tags, bitmaskBytes *uint64) {
-	if tags.bits.nonEmpty() {
+func (e *encoder) uint(value reflect.Value, tags tags, bitmaskBytes *uint64) {
+	if tags.bits().nonEmpty() {
 		bytes := *bitmaskBytes
-		if tags.bitmask == "start" {
+		if tags.bitmask() == "start" {
 			bytes = 0
 		}
-		bitmaskBits := bitmaskBits(tags.bits)
+		bitmaskBits := bitmaskBits(tags.bits())
 		pos := util.FirstBitPosition(bitmaskBits)
 		bytes = bytes | ((value.Uint() << pos) & bitmaskBits)
-		if tags.bitmask == "end" {
-			e.writeUint(tags.endianness, bytes, int(value.Type().Size()))
+		if tags.bitmask() == "end" {
+			e.writeUint(tags.endianness(), bytes, int(value.Type().Size()))
 		}
 		*bitmaskBytes = bytes
-	} else if tags.bound.nonEmpty() {
-		size, _ := strconv.Atoi(string(tags.bound))
-		e.writeUint(tags.endianness, value.Uint(), size)
+	} else if tags.bound().nonEmpty() {
+		size, _ := strconv.Atoi(string(tags.bound()))
+		e.writeUint(tags.endianness(), value.Uint(), size)
 	} else {
-		e.write(tags.endianness, value)
+		e.write(tags.endianness(), value)
 	}
 }
 
@@ -115,11 +115,11 @@ func (e *encoder) pointer(value reflect.Value) {
 	e.encode(value.Elem())
 }
 
-func (e *encoder) dynamicLength(length int, tags *tags) {
-	if tags.size.nonEmpty() {
-		size, _ := strconv.Atoi(string(tags.size))
+func (e *encoder) dynamicLength(length int, tags tags) {
+	if tags.size().nonEmpty() {
+		size, _ := strconv.Atoi(string(tags.size()))
 		if typ, ok := types[size]; ok {
-			e.writeUint(tags.endianness, uint64(length), int(typ.Size()))
+			e.writeUint(tags.endianness(), uint64(length), int(typ.Size()))
 		}
 	}
 }
