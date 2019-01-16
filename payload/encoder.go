@@ -78,15 +78,14 @@ func (e *encoder) array(value reflect.Value, tags tags) {
 }
 
 func (e *encoder) string(value reflect.Value, tags tags) {
-	v := value.String()
+	s := value.String()
 	if tags.hex().nonEmpty() {
 		size, _ := strconv.Atoi(string(tags.hex()))
-		typ := types[size]
-		addr, _ := strconv.ParseUint(v[2:], 16, size*8)
-		e.writeUint(tags.endianness(), addr, int(typ.Size()))
+		v, _ := strconv.ParseUint(s[2:], 16, size*8)
+		e.writeUint(tags.endianness(), v, size)
 	} else {
-		e.dynamicLength(len(v), tags)
-		e.write(tags.endianness(), reflect.ValueOf([]uint8(v)))
+		e.dynamicLength(len(s), tags)
+		e.writeUintSlice(tags.endianness(), []uint8(s))
 	}
 }
 
@@ -118,9 +117,7 @@ func (e *encoder) pointer(value reflect.Value) {
 func (e *encoder) dynamicLength(length int, tags tags) {
 	if tags.size().nonEmpty() {
 		size, _ := strconv.Atoi(string(tags.size()))
-		if typ, ok := types[size]; ok {
-			e.writeUint(tags.endianness(), uint64(length), int(typ.Size()))
-		}
+		e.writeUint(tags.endianness(), uint64(length), size)
 	}
 }
 
@@ -134,10 +131,26 @@ func (e *encoder) write(endianness tag, v reflect.Value) {
 		e.writeUint(endianness, v.Uint(), 4)
 	case reflect.Uint64:
 		e.writeUint(endianness, v.Uint(), 8)
-	case reflect.Slice:
-		l := v.Len()
-		for i := 0; i < l; i++ {
-			e.write(endianness, v.Index(i))
+	}
+}
+
+func (e *encoder) writeUintSlice(endianness tag, v interface{}) {
+	switch s := v.(type) {
+	case []uint8:
+		for i := 0; i < len(s); i++ {
+			e.writeUint(endianness, uint64(s[i]), 1)
+		}
+	case []uint16:
+		for i := 0; i < len(s); i++ {
+			e.writeUint(endianness, uint64(s[i]), 2)
+		}
+	case []uint32:
+		for i := 0; i < len(s); i++ {
+			e.writeUint(endianness, uint64(s[i]), 4)
+		}
+	case []uint64:
+		for i := 0; i < len(s); i++ {
+			e.writeUint(endianness, uint64(s[i]), 8)
 		}
 	}
 }

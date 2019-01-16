@@ -6,16 +6,6 @@ import (
 	"strconv"
 )
 
-var types = map[int]reflect.Type{
-	1: reflect.TypeOf(uint8(0)),
-	2: reflect.TypeOf(uint16(0)),
-	4: reflect.TypeOf(uint32(0)),
-	8: reflect.TypeOf(uint64(0)),
-}
-
-var intType = reflect.TypeOf(int(0))
-var uint64Type = reflect.TypeOf(uint64(0))
-
 type tag string
 
 func (t tag) nonEmpty() bool {
