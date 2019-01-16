@@ -27,7 +27,9 @@ func main() {
 
 	u := unpi.New(1, port)
 	z := znp.New(u)
-	z.LogFrames(false)
+	z.LogInFrames(false)
+	z.LogOutFrames(true)
+
 	go func() {
 		for {
 			select {
@@ -35,7 +37,9 @@ func main() {
 				fmt.Printf("Error: %s\n", err)
 			case async := <-z.AsyncInbound:
 				fmt.Printf("Async: %s\n", spew.Sdump(async))
-			case frame := <-z.FramesLog:
+			case frame := <-z.OutFramesLog:
+				fmt.Printf("Frame sent: %s\n", spew.Sdump(frame))
+			case frame := <-z.InFramesLog:
 				fmt.Printf("Frame received: %s\n", spew.Sdump(frame))
 			}
 		}
@@ -58,6 +62,12 @@ func main() {
 	PrintStruct(res)
 
 	res, err = z.SysSetExtAddr("0x00124b00019c2ee9")
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
+	res, err = z.UtilCallbackSubCmd(znp.Zdo, znp.Enable)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -153,6 +163,36 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	res, err = z.ZdoNwkAddrReq("0x00124b00019c2ee9", znp.AssociatedDevicesResponse, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
+	res, err = z.ZdoIeeeAddrReq("0x25cc", znp.AssociatedDevicesResponse, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
+	res, err = z.ZdoUserDescReq("0x25cc", "0xe065")
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
+	res, err = z.ZdoUserDescSet("0xe065", "0x25cc", "hello")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res, err = z.ZdoServerDiscReq(&znp.ServerMask{PrimTrustCenter: 1})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
 
 	time.Sleep(200 * time.Second)
 }

@@ -77,6 +77,16 @@ const (
 	AddrBroadcast = 15
 )
 
+type DstAddrMode uint8
+
+const (
+	DstAddrNotPresent DstAddrMode = iota
+	DstGroupAddres
+	DstAddr16Bit
+	DstAddr64Bit
+	DstBroadcast DstAddrMode = 0xFF
+)
+
 type InterPanCommand uint8
 
 const (
@@ -191,6 +201,13 @@ const (
 	ChildFfdRxIdle
 	Neighbor
 	Other
+)
+
+type ReqType uint8
+
+const (
+	SingleDeviceResponse      ReqType = 0x00
+	AssociatedDevicesResponse ReqType = 0x01
 )
 
 type StatusResponse struct {
@@ -1606,6 +1623,239 @@ type UtilZclKeyEstablishInd struct {
 	Status   uint8
 	WaitTime uint8
 	Suite    uint16
+}
+
+type ZdoNwkAddrReq struct {
+	IEEEAddress string `hex:"8"`
+	ReqType     ReqType
+	StartIndex  uint8
+}
+
+//ZdoNwkAddrReq will request the device to send a “Network Address Request”. This message sends a
+//broadcast message looking for a 16 bit address with a known 64 bit IEEE address. You must
+//subscribe to “ZDO Network Address Response” to receive the response to this message. Check
+//section 3.0.1.7 for more details on callback subscription. The response message listed below only
+//indicates whether or not the message was received properly.
+func (znp *Znp) ZdoNwkAddrReq(ieeeAddress string, reqType ReqType, startIndex uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoNwkAddrReq{IEEEAddress: ieeeAddress, ReqType: reqType, StartIndex: startIndex}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x00, req, &rsp)
+	return
+}
+
+type ZdoIeeeAddrReq struct {
+	ShortAddr  string `hex:"2"`
+	ReqType    ReqType
+	StartIndex uint8
+}
+
+//ZdoIeeeAddrReq will request a device’s IEEE 64-bit address. You must subscribe to “ZDO IEEE
+//Address Response” to receive the data response to this message. The response message listed
+//below only indicates whether or not the message was received properly.
+func (znp *Znp) ZdoIeeeAddrReq(shortAddr string, reqType ReqType, startIndex uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoIeeeAddrReq{ShortAddr: shortAddr, ReqType: reqType, StartIndex: startIndex}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x01, req, &rsp)
+	return
+}
+
+type ZdoNodeDescReq struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+}
+
+//ZdoNodeDescReq is generated to inquire about the Node Descriptor information of the destination
+//device.
+func (znp *Znp) ZdoNodeDescReq(dstAddr string, nwkAddrOfInterest string) (rsp *StatusResponse, err error) {
+	req := &ZdoNodeDescReq{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x02, req, &rsp)
+	return
+}
+
+type ZdoPowerDescReq struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+}
+
+//ZdoPowerDescReq is generated to inquire about the Power Descriptor information of the destination
+//device.
+func (znp *Znp) ZdoPowerDescReq(dstAddr string, nwkAddrOfInterest string) (rsp *StatusResponse, err error) {
+	req := &ZdoPowerDescReq{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x03, req, &rsp)
+	return
+}
+
+type ZdoSimpleDescReq struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+	Endpoint          uint8
+}
+
+//ZdoSimpleDescReq is generated to inquire as to the Simple Descriptor of the destination device’s
+//Endpoint.
+func (znp *Znp) ZdoSimpleDescReq(dstAddr string, nwkAddrOfInterest string, endpoint uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoSimpleDescReq{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest, Endpoint: endpoint}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x04, req, &rsp)
+	return
+}
+
+type ZdoActiveEpReq struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+}
+
+//ZdoActiveEpReq is generated to request a list of active endpoint from the destination device
+func (znp *Znp) ZdoActiveEpReq(dstAddr string, nwkAddrOfInterest string) (rsp *StatusResponse, err error) {
+	req := &ZdoActiveEpReq{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x05, req, &rsp)
+	return
+}
+
+type ZdoMatchDescReq struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+	ProfileID         uint16
+	InClusterList     []uint16 `size:"1"`
+	OutClusterList    []uint16 `size:"1"`
+}
+
+//ZdoMatchDescReq is generated to request the device match descriptor
+func (znp *Znp) ZdoMatchDescReq(dstAddr string, nwkAddrOfInterest string, profileId uint16,
+	inClusterList []uint16, outClusterList []uint16) (rsp *StatusResponse, err error) {
+	req := &ZdoMatchDescReq{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest, ProfileID: profileId,
+		InClusterList: inClusterList, OutClusterList: outClusterList}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x06, req, &rsp)
+	return
+}
+
+type ZdoComplexDescReq struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+}
+
+//ZdoComplexDescReq is generated to request for the destination device’s complex descriptor.
+func (znp *Znp) ZdoComplexDescReq(dstAddr string, nwkAddrOfInterest string) (rsp *StatusResponse, err error) {
+	req := &ZdoComplexDescReq{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x07, req, &rsp)
+	return
+}
+
+type ZdoUserDescReq struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+}
+
+//ZdoUserDescReq is generated to request for the destination device’s user descriptor
+func (znp *Znp) ZdoUserDescReq(dstAddr string, nwkAddrOfInterest string) (rsp *StatusResponse, err error) {
+	req := &ZdoUserDescReq{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x08, req, &rsp)
+	return
+}
+
+type MACCapabilities struct {
+	AlternatePANCoordinator uint8 `bits:"0b00000001" bitmask:"start"`
+	Router                  uint8 `bits:"0b00000010"`
+	MainPowered             uint8 `bits:"0b00000100"`
+	ReceiverOnWhenIdle      uint8 `bits:"0b00001000"`
+	Reserved1               uint8 `bits:"0b00010000"`
+	Reserved2               uint8 `bits:"0b00100000"`
+	Security                uint8 `bits:"0b01000000"`
+	Reserved3               uint8 `bits:"0b10000000" bitmask:"end"`
+}
+
+type ZdoEndDeviceAnnce struct {
+	NwkAddr      string `hex:"2"`
+	IEEEAddr     string `hex:"8"`
+	Capabilities *MACCapabilities
+}
+
+//ZdoEndDeviceAnnce will cause the device to issue an “End device announce” broadcast packet to the
+//network. This is typically used by an end-device to announce itself to the network.
+func (znp *Znp) ZdoEndDeviceAnnce(nwkAddr string, ieeeAddr string, capabilities *MACCapabilities) (rsp *StatusResponse, err error) {
+	req := &ZdoEndDeviceAnnce{NwkAddr: nwkAddr, IEEEAddr: ieeeAddr, Capabilities: capabilities}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x0A, req, &rsp)
+	return
+}
+
+type ZdoUserDescSet struct {
+	DstAddr           string `hex:"2"`
+	NWKAddrOfInterest string `hex:"2"`
+	UserDescriptor    string `size:"1"`
+}
+
+//ZdoUserDescSet is generated to write a User Descriptor value to the targeted device.
+func (znp *Znp) ZdoUserDescSet(dstAddr string, nwkAddrOfInterest string, userDescriptor string) (rsp *StatusResponse, err error) {
+	req := &ZdoUserDescSet{DstAddr: dstAddr, NWKAddrOfInterest: nwkAddrOfInterest, UserDescriptor: userDescriptor}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x0B, req, &rsp)
+	return
+}
+
+type ServerMask struct {
+	PrimTrustCenter uint16 `bits:"0x01" bitmask:"start"`
+	BkupTrustCenter uint16 `bits:"0x02"`
+	PrimBindTable   uint16 `bits:"0x04"`
+	BkupBindTable   uint16 `bits:"0x08"`
+	PrimDiscTable   uint16 `bits:"0x10"`
+	BkupDiscTable   uint16 `bits:"0x20"`
+	NetworkManager  uint16 `bits:"0x40" bitmask:"end"`
+}
+
+type ZdoServerDiscReq struct {
+	ServerMask *ServerMask
+}
+
+//ZdoServerDiscReq is used for local device to discover the location of a particular system server or
+//servers as indicated by the ServerMask parameter. The destination addressing on this request is
+//‘broadcast to all RxOnWhenIdle devices’.
+func (znp *Znp) ZdoServerDiscReq(serverMask *ServerMask) (rsp *StatusResponse, err error) {
+	req := &ZdoServerDiscReq{ServerMask: serverMask}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x0C, req, &rsp)
+	return
+}
+
+type ZdoEndDeviceBindReq struct {
+	DstAddr              string `hex:"2"`
+	LocalCoordinatorAddr string `hex:"2"`
+	IEEEAddr             string `hex:"8"`
+	Endpoint             uint8
+	ProfileID            uint16
+	InClusterList        []uint16 `size:"1"`
+	OutClusterList       []uint16 `size:"1"`
+}
+
+//ZdoEndDeviceBindReq is generated to request an End Device Bind with the destination device.
+func (znp *Znp) ZdoEndDeviceBindReq(dstAddr string, localCoordinatorAddr string, ieeeAddr string, endpoint uint8,
+	profileId uint16, inClusterList []uint16, outClusterList []uint16) (rsp *StatusResponse, err error) {
+	req := &ZdoEndDeviceBindReq{DstAddr: dstAddr, LocalCoordinatorAddr: localCoordinatorAddr, IEEEAddr: ieeeAddr,
+		Endpoint: endpoint, ProfileID: profileId, InClusterList: inClusterList, OutClusterList: outClusterList}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x20, req, &rsp)
+	return
+}
+
+type ZdoBindUnbindReq struct {
+	DstAddr     string `hex:"2"`
+	SrcAddress  string `hex:"8"`
+	SrcEndpoint uint8
+	ClusterID   uint16
+	DstAddrMode DstAddrMode
+	DstAddress  string `hex:"8"`
+	DstEndpoint uint8
+}
+
+//ZdoBindReq is generated to request an End Device Bind with the destination device.
+func (znp *Znp) ZdoBindReq(dstAddr string, srcAddress string, srcEndpoint uint8, clusterId uint16,
+	dstAddrMode DstAddrMode, dstAddress string, dstEndpoint uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoBindUnbindReq{DstAddr: dstAddr, SrcAddress: srcAddress, SrcEndpoint: srcEndpoint, ClusterID: clusterId,
+		DstAddrMode: dstAddrMode, DstAddress: dstAddress, DstEndpoint: dstEndpoint}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x21, req, &rsp)
+	return
+}
+
+//ZdoUnbindReq is generated to request a un-bind.
+func (znp *Znp) ZdoUnbindReq(dstAddr string, srcAddress string, srcEndpoint uint8, clusterId uint16,
+	dstAddrMode DstAddrMode, dstAddress string, dstEndpoint uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoBindUnbindReq{DstAddr: dstAddr, SrcAddress: srcAddress, SrcEndpoint: srcEndpoint, ClusterID: clusterId,
+		DstAddrMode: dstAddrMode, DstAddress: dstAddress, DstEndpoint: dstEndpoint}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x22, req, &rsp)
+	return
 }
 
 func init() {

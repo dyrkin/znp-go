@@ -41,8 +41,10 @@ type Znp struct {
 	inbound      chan *unpi.Frame
 	AsyncInbound chan interface{}
 	Errors       chan error
-	FramesLog    chan *unpi.Frame
-	logFrames    bool
+	InFramesLog  chan *unpi.Frame
+	OutFramesLog chan *unpi.Frame
+	logInFrames  bool
+	logOutFrames bool
 }
 
 func New(u *unpi.Unpi) *Znp {
@@ -52,15 +54,20 @@ func New(u *unpi.Unpi) *Znp {
 		inbound:      make(chan *unpi.Frame),
 		AsyncInbound: make(chan interface{}),
 		Errors:       make(chan error),
-		FramesLog:    make(chan *unpi.Frame),
+		InFramesLog:  make(chan *unpi.Frame),
+		OutFramesLog: make(chan *unpi.Frame),
 	}
 	go znp.startProcessor()
 	go znp.incomingLoop()
 	return znp
 }
 
-func (znp *Znp) LogFrames(enabled bool) {
-	znp.logFrames = enabled
+func (znp *Znp) LogInFrames(enabled bool) {
+	znp.logInFrames = enabled
+}
+
+func (znp *Znp) LogOutFrames(enabled bool) {
+	znp.logOutFrames = enabled
 }
 
 func (znp *Znp) ProcessRequest(commandType unpi.CommandType, subsystem unpi.Subsystem, command byte, request interface{}, response interface{}) (err error) {
@@ -119,8 +126,10 @@ func (znp *Znp) startProcessor() {
 					}
 					registry.Unregister(key)
 				}()
+				logFrame(frame, znp.logOutFrames, znp.OutFramesLog)
 			case *Async:
 				znp.u.WriteFrame(req.frame)
+				logFrame(req.frame, znp.logOutFrames, znp.OutFramesLog)
 			}
 		case frame := <-znp.inbound:
 			if frame.CommandType == unpi.C_SRSP {
@@ -182,9 +191,13 @@ func (znp *Znp) incomingLoop() {
 			}
 		} else {
 			znp.inbound <- frame
-			if znp.logFrames {
-				znp.FramesLog <- frame
-			}
+			logFrame(frame, znp.logInFrames, znp.InFramesLog)
 		}
+	}
+}
+
+func logFrame(frame *unpi.Frame, log bool, logger chan *unpi.Frame) {
+	if log {
+		logger <- frame
 	}
 }
