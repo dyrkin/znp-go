@@ -20,7 +20,7 @@ func UintToHexString(v uint64, size int) (string, error) {
 	case 8:
 		return fmt.Sprintf("0x%016x", v), nil
 	}
-	return "", fmt.Errorf("Unsupported size: %s", size)
+	return "", fmt.Errorf("Unsupported size: %d", size)
 }
 
 func Panicf(format string, v ...interface{}) {
