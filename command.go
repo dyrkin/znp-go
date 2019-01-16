@@ -1579,6 +1579,35 @@ func (znp *Znp) UtilZclKeyEstSign(input []uint8) (rsp *UtilZclKeyEstSignResponse
 	return
 }
 
+type UtilSrngGenResponse struct {
+	SecureRandomNumbers [100]uint8
+}
+
+//UtilSrngGen is used to generate Secure Random Number. It generates 1,000,000 bits in sets of
+//100 bytes. As in 100 bytes of secure random numbers are generated until 1,000,000 bits are
+//generated. 100 bytes are generate
+func (znp *Znp) UtilSrngGen() (rsp *UtilSrngGenResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_UTIL, 0x4C, nil, &rsp)
+	return
+}
+
+type UtilSyncReq struct {
+}
+
+//UtilSyncReq is an asynchronous request/response handshake.
+func (znp *Znp) UtilSyncReq() (err error) {
+	err = znp.ProcessRequest(unpi.C_AREQ, unpi.S_UTIL, 0xE0, nil, nil)
+	return
+}
+
+type UtilZclKeyEstablishInd struct {
+	TaskId   uint8
+	Event    uint8
+	Status   uint8
+	WaitTime uint8
+	Suite    uint16
+}
+
 func init() {
 	//AF
 	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x80}] = &AfDataConfirm{}
@@ -1600,6 +1629,10 @@ func init() {
 	//SYS
 	AsyncCommandRegistry[registryKey{unpi.S_SYS, 0x80}] = &SysResetInd{}
 	AsyncCommandRegistry[registryKey{unpi.S_SYS, 0x81}] = &SysOsalTimerExpired{}
+
+	//UTIL
+	AsyncCommandRegistry[registryKey{unpi.S_UTIL, 0xE0}] = &UtilSyncReq{}
+	AsyncCommandRegistry[registryKey{unpi.S_UTIL, 0xE1}] = &UtilZclKeyEstablishInd{}
 }
 
 type Network struct {
