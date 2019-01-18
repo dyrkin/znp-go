@@ -176,18 +176,74 @@ func main() {
 	}
 	PrintStruct(res)
 
-	res, err = z.ZdoUserDescReq("0x25cc", "0xe065")
+	res, err = z.ZdoUserDescSet("0x0000", "0x25cc", "hello")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res, err = z.ZdoUserDescReq("0x0000", "0xe065")
 	if err != nil {
 		log.Fatal(err)
 	}
 	PrintStruct(res)
 
-	res, err = z.ZdoUserDescSet("0xe065", "0x25cc", "hello")
+	res, err = z.ZdoServerDiscReq(&znp.ServerMask{PrimTrustCenter: 1})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	res, err = z.ZdoServerDiscReq(&znp.ServerMask{PrimTrustCenter: 1})
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtNwkDiskReq("0x0000", &znp.Channels{Channel11: 1, Channel12: 1, Channel13: 1, Channel14: 1}, 1, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtLqiReq("0x0000", 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtRtgReq("0x0000", 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtBindReq("0x0000", 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtPermitJoinReq(znp.Addr16Bit, "0x25cc", 3, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtNwkUpdateReq("0x25cc", znp.Addr16Bit, &znp.Channels{Channel11: 1, Channel12: 1, Channel13: 1, Channel14: 1}, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMsgCbRegister(1588)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoStartupFromApp(1)
 	if err != nil {
 		log.Fatal(err)
 	}
