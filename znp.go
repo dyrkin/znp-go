@@ -190,8 +190,8 @@ func (znp *Znp) incomingLoop() {
 				time.Sleep(5 * time.Second)
 			}
 		} else {
-			znp.inbound <- frame
 			logFrame(frame, znp.logInFrames, znp.InFramesLog)
+			znp.inbound <- frame
 		}
 	}
 }

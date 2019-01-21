@@ -23,56 +23,96 @@ const (
 type Status uint8
 
 const (
-	Success Status = iota
-	Failure
-	InvalidParameter
-	ItemCreatedAndInitialized Status = iota + 0x09
-	InitializationFailed
-	BadLength Status = iota + 0x0C
-	MemError  Status = iota + 0x10
-	BufferFull
-	UnsupportedMode
-	MacMemError
-	SapiInProgress Status = iota + 0x20
-	SapiTimeout
-	SapiInit
-	NotAuthorized          = 0x7E
-	MalformedCmd           = 0x80
-	UnsupClusterCmd        = 0x81
-	OtaAbort        Status = iota + 0x95
-	OtaImageInvalid
-	OtaWaitForData
-	OtaNoImageAvailable
-	OtaRequireMoreImage
-	ApsFail Status = iota + 0xb1
-	ApsTableFull
-	ApsIllegalRequest
-	ApsInvalidBinding
-	ApsUnsupportedAttrib
-	ApsNotSupported
-	ApsNoAck
-	ApsDuplicateEntry
-	ApsNoBoundDevice
-	ApsNotAllowed
-	ApsNotAuthenticated
-	SecNoKey Status = iota + 0xa1
-	SecOldFrmCount
-	SecMaxFrmCount
-	SecCcmFail
-	SecFailure             = 0xad
-	NwkInvalidParam Status = iota + 0xc1
-	NwkInvalidRequest
-	NwkNotPermitted
-	NwkStartupFailure
-	NwkAlreadyPresent
-	NwkSyncFailure
-	NwkTableFull
-	NwkUnknownDevice
-	NwkUnsupportedAttribute
-	NwkNoNetworks
-	NwkLeaveUnconfirmed
-	NwkNoAck
-	NwkNoRoute
+	Success          Status = 0x00
+	Failure          Status = 0x01
+	InvalidParameter Status = 0x02
+
+	ItemCreatedAndInitialized Status = 0x09
+	InitializationFailed      Status = 0x0a
+	BadLength                 Status = 0x0c
+
+	// ZStack status values must start at 0x10, after the generic status values (defined in comdef.h)
+	MemError        Status = 0x10
+	BufferFull      Status = 0x11
+	UnsupportedMode Status = 0x12
+	MacMemError     Status = 0x13
+
+	SapiInProgress Status = 0x20
+	SapiTimeout    Status = 0x21
+	SapiInit       Status = 0x22
+
+	NotAuthorized Status = 0x7E
+
+	MalformedCmd    Status = 0x80
+	UnsupClusterCmd Status = 0x81
+
+	// OTA Status values
+	OtaAbort            Status = 0x95
+	OtaImageInvalid     Status = 0x96
+	OtaWaitForData      Status = 0x97
+	OtaNoImageAvailable Status = 0x98
+	OtaRequireMoreImage Status = 0x99
+
+	// APS status values
+	ApsFail              Status = 0xb1
+	ApsTableFull         Status = 0xb2
+	ApsIllegalRequest    Status = 0xb3
+	ApsInvalidBinding    Status = 0xb4
+	ApsUnsupportedAttrib Status = 0xb5
+	ApsNotSupported      Status = 0xb6
+	ApsNoAck             Status = 0xb7
+	ApsDuplicateEntry    Status = 0xb8
+	ApsNoBoundDevice     Status = 0xb9
+	ApsNotAllowed        Status = 0xba
+	ApsNotAuthenticated  Status = 0xbb
+
+	// Security status values
+	SecNoKey       Status = 0xa1
+	SecOldFrmCount Status = 0xa2
+	SecMaxFrmCount Status = 0xa3
+	SecCcmFail     Status = 0xa4
+	SecFailure     Status = 0xad
+
+	// NWK status values
+	NwkInvalidParam         Status = 0xc1
+	NwkInvalidRequest       Status = 0xc2
+	NwkNotPermitted         Status = 0xc3
+	NwkStartupFailure       Status = 0xc4
+	NwkAlreadyPresent       Status = 0xc5
+	NwkSyncFailure          Status = 0xc6
+	NwkTableFull            Status = 0xc7
+	NwkUnknownDevice        Status = 0xc8
+	NwkUnsupportedAttribute Status = 0xc9
+	NwkNoNetworks           Status = 0xca
+	NwkLeaveUnconfirmed     Status = 0xcb
+	NwkNoAck                Status = 0xcc // not in spec
+	NwkNoRoute              Status = 0xcd
+
+	// MAC status values
+	// ZMacSuccess              Status = 0x00
+	MacBeaconLoss           Status = 0xe0
+	MacChannelAccessFailure Status = 0xe1
+	MacDenied               Status = 0xe2
+	MacDisableTrxFailure    Status = 0xe3
+	MacFailedSecurityCheck  Status = 0xe4
+	MacFrameTooLong         Status = 0xe5
+	MacInvalidGTS           Status = 0xe6
+	MacInvalidHandle        Status = 0xe7
+	MacInvalidParameter     Status = 0xe8
+	MacNoACK                Status = 0xe9
+	MacNoBeacon             Status = 0xea
+	MacNoData               Status = 0xeb
+	MacNoShortAddr          Status = 0xec
+	MacOutOfCap             Status = 0xed
+	MacPANIDConflict        Status = 0xee
+	MacRealignment          Status = 0xef
+	MacTransactionExpired   Status = 0xf0
+	MacTransactionOverFlow  Status = 0xf1
+	MacTxActive             Status = 0xf2
+	MacUnAvailableKey       Status = 0xf3
+	MacUnsupportedAttribute Status = 0xf4
+	MacUnsupported          Status = 0xf5
+	MacSrcMatchInvalidIndex Status = 0xff
 )
 
 type AddrMode uint8
@@ -2036,6 +2076,225 @@ type ZdoSetLinkKey struct {
 func (znp *Znp) ZdoSetLinkKey(shortAddr string, ieeeAddr string, linkKeyData [16]uint8) (rsp *StatusResponse, err error) {
 	req := &ZdoSetLinkKey{ShortAddr: shortAddr, IEEEAddr: ieeeAddr, LinkKeyData: linkKeyData}
 	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x23, req, &rsp)
+	return
+}
+
+type ZdoRemoveLinkKey struct {
+	IEEEAddr string `hex:"8"`
+}
+
+//ZdoRemoveLinkKey removes the application link key of a given device.
+func (znp *Znp) ZdoRemoveLinkKey(ieeeAddr string) (rsp *StatusResponse, err error) {
+	req := &ZdoRemoveLinkKey{IEEEAddr: ieeeAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x24, req, &rsp)
+	return
+}
+
+type ZdoGetLinkKey struct {
+	IEEEAddr string `hex:"8"`
+}
+
+type ZdoGetLinkKeyResponse struct {
+	Status      Status
+	IEEEAddr    string `hex:"8"`
+	LinkKeyData [16]uint8
+}
+
+//ZdoGetLinkKey retrieves the application link key of a given device.
+func (znp *Znp) ZdoGetLinkKey(ieeeAddr string) (rsp *ZdoGetLinkKeyResponse, err error) {
+	req := &ZdoGetLinkKey{IEEEAddr: ieeeAddr}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x25, req, &rsp)
+	return
+}
+
+type ZdoNwkDiscoveryReq struct {
+	ScanChannels *Channels
+	ScanDuration uint8
+}
+
+//ZdoNwkDiscoveryReq is used to initiate a network discovery (active scan).
+//Strange response SecOldFrmCount(0xa1)
+func (znp *Znp) ZdoNwkDiscoveryReq(scanChannels *Channels, scanDuration uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoNwkDiscoveryReq{ScanChannels: scanChannels, ScanDuration: scanDuration}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x26, req, &rsp)
+	return
+}
+
+type ZdoJoinReq struct {
+	LogicalChannel uint8
+	PanID          uint16
+	ExtendedPanID  uint64 //64-bit extended PAN ID (ver. 1.1 only). If not v1.1 or don't care, use all 0xFF
+	ChosenParent   string `hex:"2"`
+	ParentDepth    uint8
+	StackProfile   uint8
+}
+
+//ZdoJoinReq is used to request the device to join itself to a parent device on a network.
+func (znp *Znp) ZdoJoinReq(logicalChannel uint8, panId uint16, extendedPanId uint64,
+	chosenParent string, parentDepth uint8, stackProfile uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoJoinReq{LogicalChannel: logicalChannel, PanID: panId, ExtendedPanID: extendedPanId,
+		ChosenParent: chosenParent, ParentDepth: parentDepth, StackProfile: stackProfile}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x27, req, &rsp)
+	return
+}
+
+type ZdoSetRejoinParameters struct {
+	BackoffDuration uint32
+	ScanDuration    uint32
+}
+
+//ZdoSetRejoinParameters is used to set rejoin backoff duration and rejoin scan duration for an end device
+func (znp *Znp) ZdoSetRejoinParameters(backoffDuration uint32, scanDuration uint32) (rsp *StatusResponse, err error) {
+	req := &ZdoSetRejoinParameters{BackoffDuration: backoffDuration, ScanDuration: scanDuration}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0xCC, req, &rsp)
+	return
+}
+
+type ZdoSecAddLinkKey struct {
+	ShortAddress    string `hex:"2"`
+	ExtendedAddress string `hex:"8"`
+	Key             [16]uint8
+}
+
+//ZdoSecAddLinkKey handles the ZDO security add link key extension message.
+func (znp *Znp) ZdoSecAddLinkKey(shortAddress string, extendedAddress string, key [16]uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoSecAddLinkKey{ShortAddress: shortAddress, ExtendedAddress: extendedAddress, Key: key}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x42, req, &rsp)
+	return
+}
+
+type ZdoSecEntryLookupExt struct {
+	ExtendedAddress string `hex:"8"`
+	Entry           [5]uint8
+}
+
+type ZdoSecEntryLookupExtResponse struct {
+	AMI                  uint16
+	KeyNVID              uint16
+	AuthenticationOption uint8
+}
+
+//ZdoSecEntryLookupExt handles the ZDO security entry lookup extended extension message
+func (znp *Znp) ZdoSecEntryLookupExt(extendedAddress string, entry [5]uint8) (rsp *ZdoSecEntryLookupExtResponse, err error) {
+	req := &ZdoSecEntryLookupExt{ExtendedAddress: extendedAddress, Entry: entry}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x43, req, &rsp)
+	return
+}
+
+type ZdoSecDeviceRemove struct {
+	ExtendedAddress string `hex:"8"`
+}
+
+//ZdoSecDeviceRemove handles the ZDO security remove device extended extension message.
+func (znp *Znp) ZdoSecDeviceRemove(extendedAddress string) (rsp *StatusResponse, err error) {
+	req := &ZdoSecDeviceRemove{ExtendedAddress: extendedAddress}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x44, req, &rsp)
+	return
+}
+
+type ZdoExtRouteDisc struct {
+	DestinationAddress string `hex:"2"`
+	Options            uint8
+	Radius             uint8
+}
+
+//ZdoExtRouteDisc handles the ZDO route discovery extension message.
+func (znp *Znp) ZdoExtRouteDisc(destinationAddress string, options uint8, radius uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoExtRouteDisc{DestinationAddress: destinationAddress, Options: options, Radius: radius}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x45, req, &rsp)
+	return
+}
+
+type ZdoExtRouteCheck struct {
+	DestinationAddress string `hex:"2"`
+	RTStatus           uint8
+	Options            uint8
+}
+
+//ZdoExtRouteCheck handles the ZDO route check extension message.
+func (znp *Znp) ZdoExtRouteCheck(destinationAddress string, rtStatus uint8, options uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoExtRouteCheck{DestinationAddress: destinationAddress, RTStatus: rtStatus, Options: options}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x46, req, &rsp)
+	return
+}
+
+type ZdoExtRemoveGroup struct {
+	Endpoint uint8
+	GroupID  uint16
+}
+
+//ZdoExtRemoveGroup handles the ZDO extended remove group extension message.
+func (znp *Znp) ZdoExtRemoveGroup(endpoint uint8, groupId uint16) (rsp *StatusResponse, err error) {
+	req := &ZdoExtRemoveGroup{Endpoint: endpoint, GroupID: groupId}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x47, req, &rsp)
+	return
+}
+
+type ZdoExtRemoveAllGroup struct {
+	Endpoint uint8
+}
+
+//ZdoExtRemoveAllGroup handles the ZDO extended remove all group extension message.
+func (znp *Znp) ZdoExtRemoveAllGroup(endpoint uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoExtRemoveAllGroup{Endpoint: endpoint}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x48, req, &rsp)
+	return
+}
+
+type ZdoExtFindAllGroupsEndpoint struct {
+	Endpoint  uint8
+	GroupList []uint16 `size:"1"`
+}
+
+type ZdoExtFindAllGroupsEndpointResponse struct {
+	Groups []uint16 `size:"1"`
+}
+
+//ZdoExtFindAllGroupsEndpoint handles the ZDO extension find all groups for endpoint message
+func (znp *Znp) ZdoExtFindAllGroupsEndpoint(endpoint uint8, groupList []uint16) (rsp *ZdoExtFindAllGroupsEndpointResponse, err error) {
+	req := &ZdoExtFindAllGroupsEndpoint{Endpoint: endpoint, GroupList: groupList}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x49, req, &rsp)
+	return
+}
+
+type ZdoExtFindGroup struct {
+	Endpoint uint8
+	GroupID  uint16
+}
+
+type ZdoExtFindGroupResponse struct {
+	Status  Status
+	GroupID uint16
+	Name    string `size:"1"`
+}
+
+//ZdoExtFindGroup handles the ZDO extension find all groups for endpoint message
+func (znp *Znp) ZdoExtFindGroup(endpoint uint8, groupID uint16) (rsp *ZdoExtFindGroupResponse, err error) {
+	req := &ZdoExtFindGroup{Endpoint: endpoint, GroupID: groupID}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x4A, req, &rsp)
+	return
+}
+
+type ZdoExtAddGroup struct {
+	Endpoint  uint8
+	GroupID   uint16
+	GroupName string `size:"1"`
+}
+
+//ZdoExtAddGroup handles the ZDO extension add group message.
+func (znp *Znp) ZdoExtAddGroup(endpoint uint8, groupID uint16, groupName string) (rsp *StatusResponse, err error) {
+	req := &ZdoExtAddGroup{Endpoint: endpoint, GroupID: groupID, GroupName: groupName}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x4B, req, &rsp)
+	return
+}
+
+type ZdoExtCountAllGroupsResponse struct {
+	Count uint8
+}
+
+//ZdoExtCountAllGroups handles the ZDO extension count all groups message.
+func (znp *Znp) ZdoExtCountAllGroups() (rsp *ZdoExtCountAllGroupsResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x4C, nil, &rsp)
 	return
 }
 

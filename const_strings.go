@@ -4,61 +4,6 @@ package znp
 
 import "strconv"
 
-const (
-	_Status_name_0 = "SuccessFailureInvalidParameter"
-	_Status_name_1 = "ItemCreatedAndInitializedInitializationFailed"
-	_Status_name_2 = "BadLength"
-	_Status_name_3 = "MemErrorBufferFullUnsupportedModeMacMemError"
-	_Status_name_4 = "SapiInProgressSapiTimeoutSapiInit"
-	_Status_name_5 = "OtaAbortOtaImageInvalidOtaWaitForDataOtaNoImageAvailableOtaRequireMoreImage"
-	_Status_name_6 = "SecNoKeySecOldFrmCountSecMaxFrmCountSecCcmFail"
-	_Status_name_7 = "ApsFailApsTableFullApsIllegalRequestApsInvalidBindingApsUnsupportedAttribApsNotSupportedApsNoAckApsDuplicateEntryApsNoBoundDeviceApsNotAllowedApsNotAuthenticated"
-	_Status_name_8 = "NwkInvalidParamNwkInvalidRequestNwkNotPermittedNwkStartupFailureNwkAlreadyPresentNwkSyncFailureNwkTableFullNwkUnknownDeviceNwkUnsupportedAttributeNwkNoNetworksNwkLeaveUnconfirmedNwkNoAckNwkNoRoute"
-)
-
-var (
-	_Status_index_0 = [...]uint8{0, 7, 14, 30}
-	_Status_index_1 = [...]uint8{0, 25, 45}
-	_Status_index_3 = [...]uint8{0, 8, 18, 33, 44}
-	_Status_index_4 = [...]uint8{0, 14, 25, 33}
-	_Status_index_5 = [...]uint8{0, 8, 23, 37, 56, 75}
-	_Status_index_6 = [...]uint8{0, 8, 22, 36, 46}
-	_Status_index_7 = [...]uint8{0, 7, 19, 36, 53, 73, 88, 96, 113, 129, 142, 161}
-	_Status_index_8 = [...]uint8{0, 15, 32, 47, 64, 81, 95, 107, 123, 146, 159, 178, 186, 196}
-)
-
-func (i Status) String() string {
-	switch {
-	case 0 <= i && i <= 2:
-		return _Status_name_0[_Status_index_0[i]:_Status_index_0[i+1]]
-	case 12 <= i && i <= 13:
-		i -= 12
-		return _Status_name_1[_Status_index_1[i]:_Status_index_1[i+1]]
-	case i == 17:
-		return _Status_name_2
-	case 22 <= i && i <= 25:
-		i -= 22
-		return _Status_name_3[_Status_index_3[i]:_Status_index_3[i+1]]
-	case 42 <= i && i <= 44:
-		i -= 42
-		return _Status_name_4[_Status_index_4[i]:_Status_index_4[i+1]]
-	case 165 <= i && i <= 169:
-		i -= 165
-		return _Status_name_5[_Status_index_5[i]:_Status_index_5[i+1]]
-	case 193 <= i && i <= 196:
-		i -= 193
-		return _Status_name_6[_Status_index_6[i]:_Status_index_6[i+1]]
-	case 198 <= i && i <= 208:
-		i -= 198
-		return _Status_name_7[_Status_index_7[i]:_Status_index_7[i+1]]
-	case 230 <= i && i <= 242:
-		i -= 230
-		return _Status_name_8[_Status_index_8[i]:_Status_index_8[i+1]]
-	default:
-		return "Status(" + strconv.FormatInt(int64(i), 10) + ")"
-	}
-}
-
 const _LatencyReq_name = "NoLatencyFastBeaconsSlowBeacons"
 
 var _LatencyReq_index = [...]uint8{0, 9, 20, 31}
@@ -70,6 +15,188 @@ func (i LatencyReq) String() string {
 	return _LatencyReq_name[_LatencyReq_index[i]:_LatencyReq_index[i+1]]
 }
 
+const _StartupFromAppStatus_name = "RestoredNetworkStateNewNetworkStateLeaveAndNotStarted"
+
+var _StartupFromAppStatus_index = [...]uint8{0, 20, 35, 53}
+
+func (i StartupFromAppStatus) String() string {
+	if i >= StartupFromAppStatus(len(_StartupFromAppStatus_index)-1) {
+		return "StartupFromAppStatus(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _StartupFromAppStatus_name[_StartupFromAppStatus_index[i]:_StartupFromAppStatus_index[i+1]]
+}
+
+const _Status_name = "SuccessFailureInvalidParameterItemCreatedAndInitializedInitializationFailedBadLengthMemErrorBufferFullUnsupportedModeMacMemErrorSapiInProgressSapiTimeoutSapiInitNotAuthorizedMalformedCmdUnsupClusterCmdOtaAbortOtaImageInvalidOtaWaitForDataOtaNoImageAvailableOtaRequireMoreImageSecNoKeySecOldFrmCountSecMaxFrmCountSecCcmFailSecFailureApsFailApsTableFullApsIllegalRequestApsInvalidBindingApsUnsupportedAttribApsNotSupportedApsNoAckApsDuplicateEntryApsNoBoundDeviceApsNotAllowedApsNotAuthenticatedNwkInvalidParamNwkInvalidRequestNwkNotPermittedNwkStartupFailureNwkAlreadyPresentNwkSyncFailureNwkTableFullNwkUnknownDeviceNwkUnsupportedAttributeNwkNoNetworksNwkLeaveUnconfirmedNwkNoAckNwkNoRouteMacBeaconLossMacChannelAccessFailureMacDeniedMacDisableTrxFailureMacFailedSecurityCheckMacFrameTooLongMacInvalidGTSMacInvalidHandleMacInvalidParameterMacNoACKMacNoBeaconMacNoDataMacNoShortAddrMacOutOfCapMacPANIDConflictMacRealignmentMacTransactionExpiredMacTransactionOverFlowMacTxActiveMacUnAvailableKeyMacUnsupportedAttributeMacUnsupportedMacSrcMatchInvalidIndex"
+
+var _Status_map = map[Status]string{
+	0:   _Status_name[0:7],
+	1:   _Status_name[7:14],
+	2:   _Status_name[14:30],
+	9:   _Status_name[30:55],
+	10:  _Status_name[55:75],
+	12:  _Status_name[75:84],
+	16:  _Status_name[84:92],
+	17:  _Status_name[92:102],
+	18:  _Status_name[102:117],
+	19:  _Status_name[117:128],
+	32:  _Status_name[128:142],
+	33:  _Status_name[142:153],
+	34:  _Status_name[153:161],
+	126: _Status_name[161:174],
+	128: _Status_name[174:186],
+	129: _Status_name[186:201],
+	149: _Status_name[201:209],
+	150: _Status_name[209:224],
+	151: _Status_name[224:238],
+	152: _Status_name[238:257],
+	153: _Status_name[257:276],
+	161: _Status_name[276:284],
+	162: _Status_name[284:298],
+	163: _Status_name[298:312],
+	164: _Status_name[312:322],
+	173: _Status_name[322:332],
+	177: _Status_name[332:339],
+	178: _Status_name[339:351],
+	179: _Status_name[351:368],
+	180: _Status_name[368:385],
+	181: _Status_name[385:405],
+	182: _Status_name[405:420],
+	183: _Status_name[420:428],
+	184: _Status_name[428:445],
+	185: _Status_name[445:461],
+	186: _Status_name[461:474],
+	187: _Status_name[474:493],
+	193: _Status_name[493:508],
+	194: _Status_name[508:525],
+	195: _Status_name[525:540],
+	196: _Status_name[540:557],
+	197: _Status_name[557:574],
+	198: _Status_name[574:588],
+	199: _Status_name[588:600],
+	200: _Status_name[600:616],
+	201: _Status_name[616:639],
+	202: _Status_name[639:652],
+	203: _Status_name[652:671],
+	204: _Status_name[671:679],
+	205: _Status_name[679:689],
+	224: _Status_name[689:702],
+	225: _Status_name[702:725],
+	226: _Status_name[725:734],
+	227: _Status_name[734:754],
+	228: _Status_name[754:776],
+	229: _Status_name[776:791],
+	230: _Status_name[791:804],
+	231: _Status_name[804:820],
+	232: _Status_name[820:839],
+	233: _Status_name[839:847],
+	234: _Status_name[847:858],
+	235: _Status_name[858:867],
+	236: _Status_name[867:881],
+	237: _Status_name[881:892],
+	238: _Status_name[892:908],
+	239: _Status_name[908:922],
+	240: _Status_name[922:943],
+	241: _Status_name[943:965],
+	242: _Status_name[965:976],
+	243: _Status_name[976:993],
+	244: _Status_name[993:1016],
+	245: _Status_name[1016:1030],
+	255: _Status_name[1030:1053],
+}
+
+func (i Status) String() string {
+	if str, ok := _Status_map[i]; ok {
+		return str
+	}
+	return "Status(" + strconv.FormatInt(int64(i), 10) + ")"
+}
+
+const (
+	_AddrMode_name_0 = "AddrNotPresentAddrGroupAddr16BitAddr64Bit"
+	_AddrMode_name_1 = "AddrBroadcast"
+)
+
+var (
+	_AddrMode_index_0 = [...]uint8{0, 14, 23, 32, 41}
+)
+
+func (i AddrMode) String() string {
+	switch {
+	case 0 <= i && i <= 3:
+		return _AddrMode_name_0[_AddrMode_index_0[i]:_AddrMode_index_0[i+1]]
+	case i == 15:
+		return _AddrMode_name_1
+	default:
+		return "AddrMode(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+}
+
+const _InterPanCommand_name = "InterPanClrInterPanSetInterPanRegInterPanChk"
+
+var _InterPanCommand_index = [...]uint8{0, 11, 22, 33, 44}
+
+func (i InterPanCommand) String() string {
+	if i >= InterPanCommand(len(_InterPanCommand_index)-1) {
+		return "InterPanCommand(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _InterPanCommand_name[_InterPanCommand_index[i]:_InterPanCommand_index[i+1]]
+}
+
+const (
+	_Channel_name_0 = "AIN0AIN1AIN2AIN3AIN4AIN5AIN6AIN7"
+	_Channel_name_1 = "TemperatureSensorVoltageReading"
+)
+
+var (
+	_Channel_index_0 = [...]uint8{0, 4, 8, 12, 16, 20, 24, 28, 32}
+	_Channel_index_1 = [...]uint8{0, 17, 31}
+)
+
+func (i Channel) String() string {
+	switch {
+	case 0 <= i && i <= 7:
+		return _Channel_name_0[_Channel_index_0[i]:_Channel_index_0[i+1]]
+	case 22 <= i && i <= 23:
+		i -= 22
+		return _Channel_name_1[_Channel_index_1[i]:_Channel_index_1[i+1]]
+	default:
+		return "Channel(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+}
+
+const _Resolution_name = "Bit8Bit10Bit12Bit14"
+
+var _Resolution_index = [...]uint8{0, 4, 9, 14, 19}
+
+func (i Resolution) String() string {
+	if i >= Resolution(len(_Resolution_index)-1) {
+		return "Resolution(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Resolution_name[_Resolution_index[i]:_Resolution_index[i+1]]
+}
+
+const _Operation_name = "SetDirectionSetInputModeSetClearToggleRead"
+
+var _Operation_index = [...]uint8{0, 12, 24, 27, 32, 38, 42}
+
+func (i Operation) String() string {
+	if i >= Operation(len(_Operation_index)-1) {
+		return "Operation(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Operation_name[_Operation_index[i]:_Operation_index[i+1]]
+}
+
+const _Reason_name = "PowerUpExternalWatchDog"
+
+var _Reason_index = [...]uint8{0, 7, 15, 23}
+
+func (i Reason) String() string {
+	if i >= Reason(len(_Reason_index)-1) {
+		return "Reason(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Reason_name[_Reason_index[i]:_Reason_index[i+1]]
+}
+
 const _DeviceState_name = "InitializedNotStartedAutomaticallyInitializedNotConnectedToAnythingDiscoveringPANsToJoinJoiningPANRejoiningPANJoinedButNotAuthenticatedStartedAsDeviceAfterAuthenticationDeviceJoinedAuthenticatedAndIsRouterStartingAsZigBeeCoordinatorStartedAsZigBeeCoordinatorDeviceHasLostInformationAboutItsParent"
 
 var _DeviceState_index = [...]uint16{0, 34, 67, 88, 98, 110, 135, 169, 205, 232, 258, 296}
@@ -79,4 +206,99 @@ func (i DeviceState) String() string {
 		return "DeviceState(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _DeviceState_name[_DeviceState_index[i]:_DeviceState_index[i+1]]
+}
+
+const (
+	_SubsystemId_name_0 = "Sys"
+	_SubsystemId_name_1 = "Mac"
+	_SubsystemId_name_2 = "Nwk"
+	_SubsystemId_name_3 = "Af"
+	_SubsystemId_name_4 = "Zdo"
+	_SubsystemId_name_5 = "Sapi"
+	_SubsystemId_name_6 = "Util"
+	_SubsystemId_name_7 = "Debug"
+	_SubsystemId_name_8 = "App"
+	_SubsystemId_name_9 = "AllSubsystems"
+)
+
+func (i SubsystemId) String() string {
+	switch {
+	case i == 256:
+		return _SubsystemId_name_0
+	case i == 512:
+		return _SubsystemId_name_1
+	case i == 768:
+		return _SubsystemId_name_2
+	case i == 1024:
+		return _SubsystemId_name_3
+	case i == 1280:
+		return _SubsystemId_name_4
+	case i == 1536:
+		return _SubsystemId_name_5
+	case i == 1792:
+		return _SubsystemId_name_6
+	case i == 2048:
+		return _SubsystemId_name_7
+	case i == 2304:
+		return _SubsystemId_name_8
+	case i == 65535:
+		return _SubsystemId_name_9
+	default:
+		return "SubsystemId(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+}
+
+const _Action_name = "DisableEnable"
+
+var _Action_index = [...]uint8{0, 7, 13}
+
+func (i Action) String() string {
+	if i >= Action(len(_Action_index)-1) {
+		return "Action(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Action_name[_Action_index[i]:_Action_index[i+1]]
+}
+
+const _Shift_name = "NoShiftYesShift"
+
+var _Shift_index = [...]uint8{0, 7, 15}
+
+func (i Shift) String() string {
+	if i >= Shift(len(_Shift_index)-1) {
+		return "Shift(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Shift_name[_Shift_index[i]:_Shift_index[i+1]]
+}
+
+const _Mode_name = "OFFON"
+
+var _Mode_index = [...]uint8{0, 3, 5}
+
+func (i Mode) String() string {
+	if i >= Mode(len(_Mode_index)-1) {
+		return "Mode(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Mode_name[_Mode_index[i]:_Mode_index[i+1]]
+}
+
+const _Relation_name = "ParentChildRfdChildRfdRxIdleChildFfdChildFfdRxIdleNeighborOther"
+
+var _Relation_index = [...]uint8{0, 6, 14, 28, 36, 50, 58, 63}
+
+func (i Relation) String() string {
+	if i >= Relation(len(_Relation_index)-1) {
+		return "Relation(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Relation_name[_Relation_index[i]:_Relation_index[i+1]]
+}
+
+const _ReqType_name = "SingleDeviceResponseAssociatedDevicesResponse"
+
+var _ReqType_index = [...]uint8{0, 20, 45}
+
+func (i ReqType) String() string {
+	if i >= ReqType(len(_ReqType_index)-1) {
+		return "ReqType(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _ReqType_name[_ReqType_index[i]:_ReqType_index[i+1]]
 }

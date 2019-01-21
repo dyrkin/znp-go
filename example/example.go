@@ -27,20 +27,31 @@ func main() {
 
 	u := unpi.New(1, port)
 	z := znp.New(u)
-	z.LogInFrames(false)
+	z.LogInFrames(true)
 	z.LogOutFrames(true)
+
+	printChan := make(chan string)
+
+	go func() {
+		for {
+			select {
+			case msg := <-printChan:
+				fmt.Print(msg)
+			}
+		}
+	}()
 
 	go func() {
 		for {
 			select {
 			case err := <-z.Errors:
-				fmt.Printf("Error: %s\n", err)
+				printChan <- fmt.Sprintf("Error: %s\n", err)
 			case async := <-z.AsyncInbound:
-				fmt.Printf("Async: %s\n", spew.Sdump(async))
+				printChan <- fmt.Sprintf("Async: %s\n", spew.Sdump(async))
 			case frame := <-z.OutFramesLog:
-				fmt.Printf("Frame sent: %s\n", spew.Sdump(frame))
+				printChan <- fmt.Sprintf("Frame sent: %s\n", spew.Sdump(frame))
 			case frame := <-z.InFramesLog:
-				fmt.Printf("Frame received: %s\n", spew.Sdump(frame))
+				printChan <- fmt.Sprintf("Frame received: %s\n", spew.Sdump(frame))
 			}
 		}
 	}()
@@ -86,12 +97,6 @@ func main() {
 	PrintStruct(res)
 
 	res, err = z.SapiZbPermitJoiningRequest("0xFF00", 200)
-	if err != nil {
-		log.Fatal(err)
-	}
-	PrintStruct(res)
-
-	res, err = z.UtilLedControl(1, znp.OFF)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -248,6 +253,47 @@ func main() {
 		log.Fatal(err)
 	}
 
+	PrintStruct(res)
+
+	res, err = z.ZdoNwkDiscoveryReq(&znp.Channels{Channel11: 1, Channel12: 1, Channel13: 1, Channel14: 1}, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoExtAddGroup(1, 5, "asdfghjklzxcvbn")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoExtFindGroup(1, 5)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoExtFindAllGroupsEndpoint(1, []uint16{5})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoExtCountAllGroups()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.UtilLedControl(1, znp.OFF)
+	if err != nil {
+		log.Fatal(err)
+	}
 	PrintStruct(res)
 
 	time.Sleep(200 * time.Second)
