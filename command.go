@@ -222,7 +222,7 @@ const (
 	Sapi          SubsystemId = 0x0600
 	Util          SubsystemId = 0x0700
 	Debug         SubsystemId = 0x0800
-	App           SubsystemId = 0x00
+	App           SubsystemId = 0x0900
 	AllSubsystems SubsystemId = 0xFFFF
 )
 
