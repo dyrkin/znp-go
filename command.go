@@ -2689,6 +2689,44 @@ type ZdoBeaconNotifyInd struct {
 	BeaconList []*Beacon `size:"1"`
 }
 
+type ZdoJoinCnf struct {
+	Status        Status
+	DeviceAddress string `hex:"2"`
+	ParentAddress string `hex:"2"`
+}
+
+type ZdoNwkDiscoveryCnf struct {
+	Status Status
+}
+
+type ZdoLeaveInd struct {
+	SrcAddr string `hex:"2"`
+	ExtAddr string `hex:"8"`
+	Request uint8
+	Remove  uint8
+	Rejoin  uint8
+}
+
+type ZdoMsgCbIncoming struct {
+	SrcAddr      string `hex:"2"`
+	WasBroadcast uint8
+	ClusterID    uint16
+	SecurityUse  uint8
+	SeqNum       uint8
+	MacDstAddr   string `hex:"2"`
+	Data         []uint8
+}
+
+type ZdoTcDevInd struct {
+	SrcNwkAddr    string `hex:"2"`
+	SrcIEEEAddr   string `hex:"8"`
+	ParentNwkAddr string `hex:"2"`
+}
+
+type ZdoPermitJoinInd struct {
+	PermitJoinDuration uint8
+}
+
 func init() {
 	//AF
 	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x80}] = &AfDataConfirm{}
@@ -2743,4 +2781,10 @@ func init() {
 	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC3}] = &ZdoStatusErrorRsp{}
 	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC4}] = &ZdoSrcRtgInd{}
 	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC5}] = &ZdoBeaconNotifyInd{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC6}] = &ZdoJoinCnf{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC7}] = &ZdoNwkDiscoveryCnf{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC9}] = &ZdoLeaveInd{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xFF}] = &ZdoMsgCbIncoming{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xCA}] = &ZdoTcDevInd{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xCB}] = &ZdoPermitJoinInd{}
 }
