@@ -1114,6 +1114,18 @@ func (znp *Znp) GpDataReq(action GpAction, txOptions *TxOptions, applicationId u
 	return
 }
 
+//GpSecRsp provides a mechanism for the Green Power EndPoint to provide security data into
+//the dGP stub.
+func (znp *Znp) GpSecRsp(status GpStatus, dGPStubHandle uint8, applicationID uint8, srcID uint32,
+	gpdIEEEAddress string, endpoint uint8, gpdFSecurityLevel uint8, gpdFKeyType uint8,
+	gpdKey [16]uint8, gpdSecurityFrameCounter uint32) (rsp *StatusResponse, err error) {
+	req := &GpSecRsp{Status: status, DGPStubHandle: dGPStubHandle, ApplicationID: applicationID,
+		SrcID: srcID, GPDIEEEAddress: gpdIEEEAddress, Endpoint: endpoint, GPDFSecurityLevel: gpdFSecurityLevel,
+		GPDFKeyType: gpdFKeyType, GPDKey: gpdKey, GPDSecurityFrameCounter: gpdSecurityFrameCounter}
+	err = znp.ProcessRequest(unp.C_SREQ, unp.S_GP, 0x02, req, &rsp)
+	return
+}
+
 func init() {
 	//AF
 	asyncCommandRegistry[registryKey{unp.S_AF, 0x80}] = &AfDataConfirm{}
@@ -1177,4 +1189,11 @@ func init() {
 
 	//APP
 	asyncCommandRegistry[registryKey{unp.S_APP_CNF, 0x80}] = &AppCnfBdbCommissioningNotification{}
+
+	//GP
+	asyncCommandRegistry[registryKey{unp.S_GP, 0x01}] = &GpDataReq{}
+	asyncCommandRegistry[registryKey{unp.S_GP, 0x02}] = &GpSecRsp{}
+	asyncCommandRegistry[registryKey{unp.S_GP, 0x05}] = &GpDataCnf{}
+	asyncCommandRegistry[registryKey{unp.S_GP, 0x03}] = &GpSecReq{}
+	asyncCommandRegistry[registryKey{unp.S_GP, 0x04}] = &GpDataInd{}
 }

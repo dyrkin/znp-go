@@ -338,8 +338,28 @@ const (
 type GpAction uint8
 
 const (
-	AddGPDFIntoQueue    GpAction = 0x00
-	RemoveGPDFFromQueue GpAction = 0x01
+	GpActionAddGPDFIntoQueue    GpAction = 0x00
+	GpActionRemoveGPDFFromQueue GpAction = 0x01
+)
+
+type GpStatus uint8
+
+const (
+	GpStatusDropFrame       GpStatus = 0x00
+	GpStatusMatch           GpStatus = 0x01
+	GpStatusPassUnprocessed GpStatus = 0x02
+	GpStatusTxThenDrop      GpStatus = 0x03
+	GpStatusError           GpStatus = 0x04
+)
+
+type GpDataIndStatus uint8
+
+const (
+	GpDataIndStatusSecuritySuccess GpDataIndStatus = 0x00
+	GpDataIndStatusNoSecurity      GpDataIndStatus = 0x01
+	GpDataIndStatusCounterFailure  GpDataIndStatus = 0x02
+	GpDataIndStatusAuthFailure     GpDataIndStatus = 0x03
+	GpDataIndStatusUnprocessed     GpDataIndStatus = 0x04
 )
 
 const (

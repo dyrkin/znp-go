@@ -1513,3 +1513,46 @@ type GpDataReq struct {
 	GPEPHandle             uint8
 	GPTxQueueEntryLifetime uint32 `bound:"3"`
 }
+
+type GpSecRsp struct {
+	Status                  GpStatus
+	DGPStubHandle           uint8
+	ApplicationID           uint8
+	SrcID                   uint32
+	GPDIEEEAddress          string `hex:"8"`
+	Endpoint                uint8
+	GPDFSecurityLevel       uint8
+	GPDFKeyType             uint8
+	GPDKey                  [16]uint8
+	GPDSecurityFrameCounter uint32
+}
+
+type GpDataCnf struct {
+	Status       Status
+	GPMPDUHandle uint8
+}
+
+type GpSecReq struct {
+	ApplicationID           uint8
+	SrcID                   uint32
+	GPDIEEEAddress          string `hex:"8"`
+	Endpoint                uint8
+	GPDFSecurityLevel       uint8
+	GPDFKeyType             uint8
+	GPDSecurityFrameCounter uint32
+	DGPStubHandle           uint8
+}
+
+type GpDataInd struct {
+	Status      GpDataIndStatus
+	RSSI        uint8
+	LinkQuality uint8
+	SeqNumber   uint8
+	SrcAddrMode AddrMode
+	SrcPANId    uint16
+	SrcAddress  string `hex:"8"`
+	DstAddrMode AddrMode
+	DstPANId    uint16
+	DstAddress  string  `hex:"8"`
+	GPMPDU      []uint8 `size:"1"`
+}
