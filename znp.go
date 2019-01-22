@@ -7,55 +7,55 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	unpi "github.com/dyrkin/unpi-go"
+	unp "github.com/dyrkin/unp-go"
 
 	"github.com/dyrkin/znp-go/payload"
 	"github.com/dyrkin/znp-go/reflection"
 )
 
 type Sync struct {
-	frame   *unpi.Frame
-	syncRsp chan *unpi.Frame
+	frame   *unp.Frame
+	syncRsp chan *unp.Frame
 	syncErr chan error
 }
 
 type Async struct {
-	frame *unpi.Frame
+	frame *unp.Frame
 }
 
 type Outgoing interface {
-	Frame() *unpi.Frame
+	Frame() *unp.Frame
 }
 
-func (s *Sync) Frame() *unpi.Frame {
+func (s *Sync) Frame() *unp.Frame {
 	return s.frame
 }
 
-func (a *Async) Frame() *unpi.Frame {
+func (a *Async) Frame() *unp.Frame {
 	return a.frame
 }
 
 type Znp struct {
-	u            *unpi.Unpi
+	u            *unp.Unp
 	outbound     chan Outgoing
-	inbound      chan *unpi.Frame
+	inbound      chan *unp.Frame
 	AsyncInbound chan interface{}
 	Errors       chan error
-	InFramesLog  chan *unpi.Frame
-	OutFramesLog chan *unpi.Frame
+	InFramesLog  chan *unp.Frame
+	OutFramesLog chan *unp.Frame
 	logInFrames  bool
 	logOutFrames bool
 }
 
-func New(u *unpi.Unpi) *Znp {
+func New(u *unp.Unp) *Znp {
 	znp := &Znp{
 		u:            u,
 		outbound:     make(chan Outgoing),
-		inbound:      make(chan *unpi.Frame),
+		inbound:      make(chan *unp.Frame),
 		AsyncInbound: make(chan interface{}),
 		Errors:       make(chan error),
-		InFramesLog:  make(chan *unpi.Frame),
-		OutFramesLog: make(chan *unpi.Frame),
+		InFramesLog:  make(chan *unp.Frame),
+		OutFramesLog: make(chan *unp.Frame),
 	}
 	go znp.startProcessor()
 	go znp.incomingLoop()
@@ -70,8 +70,8 @@ func (znp *Znp) LogOutFrames(enabled bool) {
 	znp.logOutFrames = enabled
 }
 
-func (znp *Znp) ProcessRequest(commandType unpi.CommandType, subsystem unpi.Subsystem, command byte, request interface{}, response interface{}) (err error) {
-	frame := &unpi.Frame{
+func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsystem, command byte, request interface{}, response interface{}) (err error) {
+	frame := &unp.Frame{
 		CommandType: commandType,
 		Subsystem:   subsystem,
 		Command:     command,
@@ -79,9 +79,9 @@ func (znp *Znp) ProcessRequest(commandType unpi.CommandType, subsystem unpi.Subs
 	}
 	done := make(chan bool, 1)
 	go func() {
-		if commandType == unpi.C_SREQ {
+		if commandType == unp.C_SREQ {
 			outgoing := &Sync{frame: frame,
-				syncRsp: make(chan *unpi.Frame, 1),
+				syncRsp: make(chan *unp.Frame, 1),
 				syncErr: make(chan error, 1),
 			}
 			znp.outbound <- outgoing
@@ -132,11 +132,11 @@ func (znp *Znp) startProcessor() {
 				logFrame(req.frame, znp.logOutFrames, znp.OutFramesLog)
 			}
 		case frame := <-znp.inbound:
-			if frame.CommandType == unpi.C_SRSP {
+			if frame.CommandType == unp.C_SRSP {
 				//process error response
-				if frame.Subsystem == unpi.S_RES0 && frame.Command == 0 {
+				if frame.Subsystem == unp.S_RES0 && frame.Command == 0 {
 					errorCode := frame.Payload[0]
-					subsystem := unpi.Subsystem(frame.Payload[1] & 0x1F)
+					subsystem := unp.Subsystem(frame.Payload[1] & 0x1F)
 					command := frame.Payload[2]
 					key := &registryKey{subsystem, command}
 					value, ok := registry.Get(key)
@@ -169,7 +169,7 @@ func (znp *Znp) startProcessor() {
 				}
 			} else {
 				key := registryKey{frame.Subsystem, frame.Command}
-				if value, ok := AsyncCommandRegistry[key]; ok {
+				if value, ok := asyncCommandRegistry[key]; ok {
 					copy := reflection.Copy(value)
 					payload.Decode(frame.Payload, copy)
 					znp.AsyncInbound <- copy
@@ -196,7 +196,7 @@ func (znp *Znp) incomingLoop() {
 	}
 }
 
-func logFrame(frame *unpi.Frame, log bool, logger chan *unpi.Frame) {
+func logFrame(frame *unp.Frame, log bool, logger chan *unp.Frame) {
 	if log {
 		logger <- frame
 	}

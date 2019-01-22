@@ -4,15 +4,15 @@ import (
 	"sync"
 	"time"
 
-	unpi "github.com/dyrkin/unpi-go"
+	unp "github.com/dyrkin/unp-go"
 )
 
 type registryKey struct {
-	subsystem unpi.Subsystem
+	subsystem unp.Subsystem
 	command   byte
 }
 type registryValue struct {
-	syncRsp  chan *unpi.Frame
+	syncRsp  chan *unp.Frame
 	syncErr  chan error
 	deadline *deadline
 }

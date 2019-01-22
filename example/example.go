@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	unpi "github.com/dyrkin/unpi-go"
+	unp "github.com/dyrkin/unp-go"
 	znp "github.com/dyrkin/znp-go"
 	serial "go.bug.st/serial.v1"
 )
@@ -25,7 +25,7 @@ func main() {
 	}
 	port.SetRTS(true)
 
-	u := unpi.New(1, port)
+	u := unp.New(1, port)
 	z := znp.New(u)
 	z.LogInFrames(true)
 	z.LogOutFrames(true)
@@ -366,6 +366,11 @@ func main() {
 	}
 
 	PrintStruct(res)
+
+	err = z.DebugMsg("hello")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// res, err = z.UtilLedControl(1, znp.OFF)
 	// if err != nil {
