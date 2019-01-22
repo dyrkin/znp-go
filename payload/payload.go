@@ -18,6 +18,10 @@ func (t tags) hex() tag {
 	return tag(reflect.StructTag(t).Get("hex"))
 }
 
+func (t tags) cond() tag {
+	return tag(reflect.StructTag(t).Get("cond"))
+}
+
 func (t tags) endianness() tag {
 	return tag(reflect.StructTag(t).Get("endianness"))
 }

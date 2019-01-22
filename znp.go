@@ -120,7 +120,7 @@ func (znp *Znp) startProcessor() {
 					select {
 					case _ = <-deadline.timer.C:
 						if !deadline.timer.Stop() {
-							req.syncErr <- fmt.Errorf("timed out while waiting response for command: %b sent to subsystem: %s ", frame.Command, frame.Subsystem)
+							req.syncErr <- fmt.Errorf("timed out while waiting response for command: 0x%x sent to subsystem: %s ", frame.Command, frame.Subsystem)
 						}
 					case _ = <-deadline.cancelled:
 					}

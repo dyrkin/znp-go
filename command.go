@@ -46,6 +46,19 @@ const (
 	MalformedCmd    Status = 0x80
 	UnsupClusterCmd Status = 0x81
 
+	ZdpInvalidEp         Status = 0x82 // Invalid endpoint value
+	ZdpNotActive         Status = 0x83 // Endpoint not described by a simple desc.
+	ZdpNotSupported      Status = 0x84 // Optional feature not supported
+	ZdpTimeout           Status = 0x85 // Operation has timed out
+	ZdpNoMatch           Status = 0x86 // No match for end device bind
+	ZdpNoEntry           Status = 0x88 // Unbind request failed, no entry
+	ZdpNoDescriptor      Status = 0x89 // Child descriptor not available
+	ZdpInsufficientSpace Status = 0x8a // Insufficient space to support operation
+	ZdpNotPermitted      Status = 0x8b // Not in proper state to support operation
+	ZdpTableFull         Status = 0x8c // No table space to support operation
+	ZdpNotAuthorized     Status = 0x8d // Permissions indicate request not authorized
+	ZdpBindingTableFull  Status = 0x8e // No binding table space to support operation
+
 	// OTA Status values
 	OtaAbort            Status = 0x95
 	OtaImageInvalid     Status = 0x96
@@ -191,6 +204,11 @@ const (
 	StartingAsZigBeeCoordinator
 	StartedAsZigBeeCoordinator
 	DeviceHasLostInformationAboutItsParent
+	DeviceSendingKeepAliveToParent
+	DeviceWaitingBeforeRejoin
+	ReJoiningPANInSecureModeScanningAllChannels
+	ReJoiningPANInTrustCenterModeScanningCurrentChannel
+	ReJoiningPANInTrustCenterModeScanningAllChannels
 )
 
 type SubsystemId uint16
@@ -204,7 +222,7 @@ const (
 	Sapi          SubsystemId = 0x0600
 	Util          SubsystemId = 0x0700
 	Debug         SubsystemId = 0x0800
-	App           SubsystemId = 0x0900
+	App           SubsystemId = 0x00
 	AllSubsystems SubsystemId = 0xFFFF
 )
 
@@ -246,6 +264,15 @@ type ReqType uint8
 const (
 	SingleDeviceResponse      ReqType = 0x00
 	AssociatedDevicesResponse ReqType = 0x01
+)
+
+type RouteStatus uint8
+
+const (
+	Active            RouteStatus = 0x00
+	DiscoveryUnderway RouteStatus = 0x01
+	DiscoveryFailed   RouteStatus = 0x02
+	Inactive          RouteStatus = 0x03
 )
 
 type StatusResponse struct {
@@ -1796,7 +1823,7 @@ type CapInfo struct {
 	Reserved1               uint8 `bits:"0b00010000"`
 	Reserved2               uint8 `bits:"0b00100000"`
 	Security                uint8 `bits:"0b01000000"`
-	Reserved3               uint8 `bits:"0b10000000" bitmask:"end"`
+	AllocAddr               uint8 `bits:"0b10000000" bitmask:"end"`
 }
 
 type ZdoEndDeviceAnnce struct {
@@ -2298,6 +2325,370 @@ func (znp *Znp) ZdoExtCountAllGroups() (rsp *ZdoExtCountAllGroupsResponse, err e
 	return
 }
 
+type ZdoExtRxIdle struct {
+	SetFlag  uint8
+	SetValue uint8
+}
+
+//ZdoExtRxIdle handles the ZDO extension Get/Set RxOnIdle to ZMac message
+func (znp *Znp) ZdoExtRxIdle(setFlag uint8, setValue uint8) (rsp *StatusResponse, err error) { //very unclear from the docs and the code
+	req := &ZdoExtRxIdle{SetFlag: setFlag, SetValue: setValue}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x4D, req, &rsp)
+	return
+}
+
+type ZdoExtUpdateNwkKey struct {
+	DestinationAddress string `hex:"2"`
+	KeySeqNum          uint8
+	Key                [128]uint8
+}
+
+//ZdoExtUpdateNwkKey handles the ZDO security update network key extension message.
+func (znp *Znp) ZdoExtUpdateNwkKey(destinationAddress string, keySeqNum uint8, key [128]uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoExtUpdateNwkKey{DestinationAddress: destinationAddress, KeySeqNum: keySeqNum, Key: key}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x4E, req, &rsp)
+	return
+}
+
+type ZdoExtSwitchNwkKey struct {
+	DestinationAddress string `hex:"2"`
+	KeySeqNum          uint8
+}
+
+//ZdoExtSwitchNwkKey handles the ZDO security switch network key extension message.
+func (znp *Znp) ZdoExtSwitchNwkKey(destinationAddress string, keySeqNum uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoExtSwitchNwkKey{DestinationAddress: destinationAddress, KeySeqNum: keySeqNum}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x4F, req, &rsp)
+	return
+}
+
+type ZdoExtNwkInfoResponse struct {
+	ShortAddress          string `hex:"2"`
+	PanID                 uint16
+	ParentAddress         string `hex:"2"`
+	ExtendedPanID         uint64
+	ExtendedParentAddress string `hex:"8"`
+	Channel               uint16 //uint16 or uint8?????
+}
+
+//ZdoExtNwkInfo handles the ZDO extension network message.
+func (znp *Znp) ZdoExtNwkInfo() (rsp *ZdoExtNwkInfoResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x50, nil, &rsp)
+	return
+}
+
+type ZdoExtSeqApsRemoveReq struct {
+	NwkAddress      string `hex:"2"`
+	ExtendedAddress string `hex:"8"`
+	ParentAddress   string `hex:"2"`
+}
+
+//ZdoExtSeqApsRemoveReq handles the ZDO extension Security Manager APS Remove Request message.
+func (znp *Znp) ZdoExtSeqApsRemoveReq(nwkAddress string, extendedAddress string, parentAddress string) (rsp *StatusResponse, err error) {
+	req := &ZdoExtSeqApsRemoveReq{NwkAddress: nwkAddress, ExtendedAddress: extendedAddress, ParentAddress: parentAddress}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x51, req, &rsp)
+	return
+}
+
+//ZdoForceConcentratorChange forces a network concentrator change by resetting zgConcentratorEnable and
+//zgConcentratorDiscoveryTime from NV and set nwk event.
+func (znp *Znp) ZdoForceConcentratorChange() error {
+	return znp.ProcessRequest(unpi.C_AREQ, unpi.S_ZDO, 0x52, nil, nil)
+}
+
+type ZdoExtSetParams struct {
+	UseMulticast uint8
+}
+
+//ZdoExtSeqApsRemoveReq set parameters not settable through NV.
+func (znp *Znp) ZdoExtSetParams(useMulticast uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoExtSetParams{UseMulticast: useMulticast}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x53, req, &rsp)
+	return
+}
+
+type ZdoNwkAddrOfInterestReq struct {
+	DestAddr          string `hex:"2"`
+	NwkAddrOfInterest string `hex:"2"`
+	Cmd               uint8
+}
+
+//ZdoNwkAddrOfInterestReq handles ZDO network address of interest request.
+func (znp *Znp) ZdoNwkAddrOfInterestReq(destAddr string, nwkAddrOfInterest string, cmd uint8) (rsp *StatusResponse, err error) {
+	req := &ZdoNwkAddrOfInterestReq{DestAddr: destAddr, NwkAddrOfInterest: nwkAddrOfInterest, Cmd: cmd}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_ZDO, 0x29, req, &rsp)
+	return
+}
+
+type ZdoNwkAddrRsp struct {
+	Status       Status
+	IEEEAddr     string `hex:"8"`
+	NwkAddr      string `hex:"2"`
+	StartIndex   uint8
+	AssocDevList []string `size:"1" hex:"2"`
+}
+
+type ZdoIEEEAddrRsp struct {
+	Status       Status
+	IEEEAddr     string `hex:"8"`
+	NwkAddr      string `hex:"2"`
+	StartIndex   uint8
+	AssocDevList []string `size:"1" hex:"2"`
+}
+
+type LogicalType uint8
+
+func (t LogicalType) Coordinator() bool {
+	return t&0x1 > 0
+}
+
+func (t LogicalType) Router() bool {
+	return t&0x2 > 0
+}
+
+func (t LogicalType) EndDevice() bool {
+	return t&0x4 > 0
+}
+
+type ZdoNodeDescRsp struct {
+	SrcAddr                    string `hex:"2"`
+	Status                     Status
+	NWKAddrOfInterest          string      `hex:"2"`
+	LogicalType                LogicalType `bits:"0b00000011" bitmask:"start"`
+	ComplexDescriptorAvailable uint8       `bits:"0b00001000"`
+	UserDescriptorAvailable    uint8       `bits:"0b00010000"  bitmask:"end"`
+	APSFlags                   uint8       `bits:"0b00011111" bitmask:"start"`
+	FrequencyBand              uint8       `bits:"0b11100000" bitmask:"end"`
+	MacCapabilitiesFlags       *CapInfo
+	ManufacturerCode           uint16
+	MaxBufferSize              uint8
+	MaxInTransferSize          uint16
+	ServerMask                 *ServerMask
+	MaxOutTransferSize         uint16
+	DescriptorCapabilities     uint8
+}
+
+type ZdoPowerDescRsp struct {
+	SrcAddr                 string `hex:"2"`
+	Status                  Status
+	NWKAddr                 string `hex:"2"`
+	CurrentPowerMode        uint8  `bits:"0b00001111" bitmask:"start"`
+	AvailablePowerSources   uint8  `bits:"0b11110000"  bitmask:"end"`
+	CurrentPowerSource      uint8  `bits:"0b00001111" bitmask:"start"`
+	CurrentPowerSourceLevel uint8  `bits:"0b11110000"  bitmask:"end"`
+}
+
+type ZdoSimpleDescRsp struct {
+	SrcAddr        string `hex:"2"`
+	Status         Status
+	NWKAddr        string `hex:"2"`
+	Len            uint8
+	Endpoint       uint8
+	ProfileID      uint16
+	DeviceID       uint16
+	DeviceVersion  uint8
+	InClusterList  []uint16 `size:"1"`
+	OutClusterList []uint16 `size:"1"`
+}
+
+type ZdoActiveEpRsp struct {
+	SrcAddr      string `hex:"2"`
+	Status       Status
+	NWKAddr      string  `hex:"2"`
+	ActiveEPList []uint8 `size:"1"`
+}
+
+type ZdoMatchDescRsp struct {
+	SrcAddr   string `hex:"2"`
+	Status    Status
+	NWKAddr   string  `hex:"2"`
+	MatchList []uint8 `size:"1"`
+}
+
+type ZdoComplexDescRsp struct {
+	SrcAddr           string `hex:"2"`
+	Status            Status
+	NWKAddr           string `hex:"2"`
+	ComplexDescriptor string `size:"1"`
+}
+
+type ZdoUserDescRsp struct {
+	SrcAddr        string `hex:"2"`
+	Status         Status
+	NWKAddr        string `hex:"2"`
+	UserDescriptor string `size:"1"`
+}
+
+type ZdoUserDescConf struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+	NWKAddr string `hex:"2"`
+}
+
+type ZdoServerDiscRsp struct {
+	SrcAddr    string `hex:"2"`
+	Status     Status
+	ServerMask *ServerMask
+}
+
+type ZdoEndDeviceBindRsp struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+}
+
+type ZdoBindRsp struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+}
+
+type ZdoUnbindRsp struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+}
+
+type Network struct {
+	PanID           uint16 `bound:"8"`
+	LogicalChannel  uint8
+	StackProfile    uint8 `bits:"0b00001111" bitmask:"start"`
+	ZigbeeVersion   uint8 `bits:"0b11110000" bitmask:"end"`
+	BeaconOrder     uint8 `bits:"0b00001111" bitmask:"start"`
+	SuperFrameOrder uint8 `bits:"0b11110000" bitmask:"end"`
+	PermitJoin      uint8
+}
+
+type ZdoMgmtNwkDiscRsp struct {
+	SrcAddr      string `hex:"2"`
+	Status       Status
+	NetworkCount uint8
+	StartIndex   uint8
+	NetworkList  []*Network `size:"1"`
+}
+
+type LqiDeviceType uint8
+
+const (
+	Coordinator LqiDeviceType = 0x00
+	Router      LqiDeviceType = 0x01
+	EndDevice   LqiDeviceType = 0x02
+)
+
+type NeighborLqi struct {
+	ExtendedPanID   uint64
+	ExtendedAddress string        `hex:"8"`
+	NetworkAddress  string        `hex:"2"`
+	DeviceType      LqiDeviceType `bits:"0b00000011" bitmask:"start"`
+	RxOnWhenIdle    uint8         `bits:"0b00001100"`
+	Relationship    uint8         `bits:"0b00110000"`
+	PermitJoining   uint8
+	Depth           uint8
+	LQI             uint8
+}
+
+type ZdoMgmtLqiRsp struct {
+	SrcAddr              string `hex:"2"`
+	Status               Status
+	NeighborTableEntries uint8
+	StartIndex           uint8
+	NeighborLqiList      []*NeighborLqi `size:"1"`
+}
+
+type Route struct {
+	DestinationAddress string `hex:"2"`
+	Status             RouteStatus
+	NextHop            string `hex:"2"`
+}
+
+type ZdoMgmtRtgRsp struct {
+	SrcAddr             string `hex:"2"`
+	Status              Status
+	RoutingTableEntries uint8
+	StartIndex          uint8
+	RoutingTable        []*Route `size:"1"`
+}
+
+type Addr struct {
+	AddrMode     AddrMode
+	ShortAddr    string `hex:"2" cond:"uint:AddrMode!=3"`
+	ExtendedAddr string `hex:"8" cond:"uint:AddrMode==3"`
+	DstEndpoint  uint8  `cond:"uint:AddrMode==3"`
+}
+
+type Binding struct {
+	SrcAddr     string `hex:"8"`
+	SrcEndpoint uint8
+	ClusterID   uint16
+	DstAddr     *Addr
+}
+
+type ZdoMgmtBindRsp struct {
+	SrcAddr          string `hex:"2"`
+	Status           Status
+	BindTableEntries uint8
+	StartIndex       uint8
+	BindTable        []*Binding `size:"1"`
+}
+
+type ZdoMgmtLeaveRsp struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+}
+
+type ZdoMgmtDirectJoinRsp struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+}
+
+type ZdoMgmtPermitJoinRsp struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+}
+
+type ZdoStateChangeInd struct {
+	State DeviceState
+}
+
+type ZdoEndDeviceAnnceInd struct {
+	SrcAddr      string `hex:"2"`
+	NwkAddr      string `hex:"2"`
+	IEEEAddr     string `hex:"8"`
+	Capabilities *CapInfo
+}
+
+type ZdoMatchDescRpsSent struct {
+	NwkAddr        string   `hex:"2"`
+	InClusterList  []uint16 `size:"1"`
+	OutClusterList []uint16 `size:"1"`
+}
+
+type ZdoStatusErrorRsp struct {
+	SrcAddr string `hex:"2"`
+	Status  Status
+}
+
+type ZdoSrcRtgInd struct {
+	DstAddr   string   `hex:"2"`
+	RelayList []string `size:"1" hex:"2"`
+}
+
+type Beacon struct {
+	SrcAddr         string `hex:"2"`
+	PanID           uint16
+	LogicalChannel  uint8
+	PermitJoining   uint8
+	RouterCapacity  uint8
+	DeviceCapacity  uint8
+	ProtocolVersion uint8
+	StackProfile    uint8
+	LQI             uint8
+	Depth           uint8
+	UpdateID        uint8
+	ExtendedPanID   uint64
+}
+
+type ZdoBeaconNotifyInd struct {
+	BeaconList []*Beacon `size:"1"`
+}
+
 func init() {
 	//AF
 	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x80}] = &AfDataConfirm{}
@@ -2323,14 +2714,33 @@ func init() {
 	//UTIL
 	AsyncCommandRegistry[registryKey{unpi.S_UTIL, 0xE0}] = &UtilSyncReq{}
 	AsyncCommandRegistry[registryKey{unpi.S_UTIL, 0xE1}] = &UtilZclKeyEstablishInd{}
-}
 
-type Network struct {
-	NeighborPanID   uint16
-	LogicalChannel  uint8
-	StackProfile    uint8 `bitmask:"start" bits:"0b00001111"`
-	ZigbeeVersion   uint8 `bitmask:"end" bits:"0b11110000"`
-	BeaconOrder     uint8 `bitmask:"start" bits:"0b00001111"`
-	SuperFrameOrder uint8 `bitmask:"end" bits:"0b11110000"`
-	PermitJoin      uint8
+	//ZDO
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x80}] = &ZdoNwkAddrRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x81}] = &ZdoIEEEAddrRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x82}] = &ZdoNodeDescRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x83}] = &ZdoPowerDescRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x84}] = &ZdoSimpleDescRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x85}] = &ZdoActiveEpRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x86}] = &ZdoMatchDescRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x87}] = &ZdoComplexDescRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x88}] = &ZdoUserDescRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x89}] = &ZdoUserDescConf{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0x8A}] = &ZdoServerDiscRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xA0}] = &ZdoEndDeviceBindRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xA1}] = &ZdoBindRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xA2}] = &ZdoUnbindRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xB0}] = &ZdoMgmtNwkDiscRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xB1}] = &ZdoMgmtLqiRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xB2}] = &ZdoMgmtRtgRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xB3}] = &ZdoMgmtBindRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xB4}] = &ZdoMgmtLeaveRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xB5}] = &ZdoMgmtDirectJoinRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xB6}] = &ZdoMgmtPermitJoinRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC0}] = &ZdoStateChangeInd{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC1}] = &ZdoEndDeviceAnnceInd{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC2}] = &ZdoMatchDescRpsSent{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC3}] = &ZdoStatusErrorRsp{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC4}] = &ZdoSrcRtgInd{}
+	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xC5}] = &ZdoBeaconNotifyInd{}
 }

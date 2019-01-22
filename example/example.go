@@ -48,10 +48,10 @@ func main() {
 				printChan <- fmt.Sprintf("Error: %s\n", err)
 			case async := <-z.AsyncInbound:
 				printChan <- fmt.Sprintf("Async: %s\n", spew.Sdump(async))
-			case frame := <-z.OutFramesLog:
-				printChan <- fmt.Sprintf("Frame sent: %s\n", spew.Sdump(frame))
-			case frame := <-z.InFramesLog:
-				printChan <- fmt.Sprintf("Frame received: %s\n", spew.Sdump(frame))
+			case _ = <-z.OutFramesLog:
+				// printChan <- fmt.Sprintf("Frame sent: %s\n", spew.Sdump(frame))
+			case _ = <-z.InFramesLog:
+				// printChan <- fmt.Sprintf("Frame received: %s\n", spew.Sdump(frame))
 			}
 		}
 	}()
@@ -220,7 +220,21 @@ func main() {
 
 	PrintStruct(res)
 
+	res, err = z.ZdoBindReq("0x0000", "0x00124b00019c2ee9", 1, 30, znp.Addr64Bit, "0x0000000000003000", 2)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
 	res, err = z.ZdoMgmtBindReq("0x0000", 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtBindReq("0x0000", 13)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -290,11 +304,74 @@ func main() {
 
 	PrintStruct(res)
 
-	res, err = z.UtilLedControl(1, znp.OFF)
+	res, err = z.ZdoExtSwitchNwkKey("0x25cc", 0)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	PrintStruct(res)
+
+	res, err = z.UtilGetDeviceInfo()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoNodeDescReq("0x0000", "0x0000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoActiveEpReq("0x0000", "0x0000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoPowerDescReq("0x0000", "0x0000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoComplexDescReq("0x0000", "0x0000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoUserDescReq("0x0000", "0x0000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtLqiReq("0x0000", 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.ZdoMgmtRtgReq("0x0000", 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	// res, err = z.UtilLedControl(1, znp.OFF)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// PrintStruct(res)
 
 	time.Sleep(200 * time.Second)
 }

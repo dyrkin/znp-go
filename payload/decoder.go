@@ -3,6 +3,7 @@ package payload
 import (
 	"bytes"
 	"encoding/binary"
+	"strings"
 
 	"reflect"
 	"strconv"
@@ -50,27 +51,27 @@ func (d *decoder) strukt(value reflect.Value) {
 		case reflect.Ptr:
 			d.pointer(field)
 		case reflect.String:
-			d.string(field, tags)
+			d.string(value, field, tags)
 		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			d.uint(field, tags, &bitmaskBytes)
+			d.uint(value, field, tags, &bitmaskBytes)
 		case reflect.Array:
 			d.array(field, tags)
 		case reflect.Slice:
-			d.slice(field, tags)
+			d.slice(value, field, tags)
 		}
 	}
 }
 
-func (d *decoder) slice(value reflect.Value, tags tags) {
+func (d *decoder) slice(parent reflect.Value, value reflect.Value, tags tags) {
 	length := d.dynamicLength(tags)
 	value.Set(reflect.MakeSlice(value.Type(), length, length))
 	for i := 0; i < length; i++ {
 		sliceElement := value.Index(i)
 		switch sliceElement.Kind() {
 		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			d.uint(sliceElement, tags, nil)
+			d.uint(parent, sliceElement, tags, nil)
 		case reflect.String:
-			d.string(sliceElement, tags)
+			d.string(parent, sliceElement, tags)
 		case reflect.Ptr:
 			d.pointer(sliceElement)
 		case reflect.Struct:
@@ -90,7 +91,12 @@ func (d *decoder) array(value reflect.Value, tags tags) {
 	}
 }
 
-func (d *decoder) uint(value reflect.Value, tags tags, bitmaskBytes *uint64) {
+func (d *decoder) uint(parent reflect.Value, value reflect.Value, tags tags, bitmaskBytes *uint64) {
+	if tags.cond().nonEmpty() {
+		if !checkCondition(tags.cond(), parent) {
+			return
+		}
+	}
 	if value.CanAddr() {
 		if tags.bits().nonEmpty() {
 			if tags.bitmask() == "start" {
@@ -113,7 +119,41 @@ func (d *decoder) uint(value reflect.Value, tags tags, bitmaskBytes *uint64) {
 	}
 }
 
-func (d *decoder) string(value reflect.Value, tags tags) {
+func checkCondition(cond tag, parent reflect.Value) bool {
+	v := strings.Split(string(cond), ":")
+	t := v[0]
+	c := v[1]
+	var op string
+	switch {
+	case strings.Contains(c, "=="):
+		op = "=="
+	case strings.Contains(c, "!="):
+		op = "!="
+	}
+	v = strings.Split(c, op)
+	l := v[0]
+	r := v[1]
+	switch t {
+	case "uint":
+		lv := uint64(parent.FieldByName(l).Uint())
+		n, _ := strconv.Atoi(r)
+		rv := uint64(n)
+		switch op {
+		case "==":
+			return lv == rv
+		case "!=":
+			return lv != rv
+		}
+	}
+	return true
+}
+
+func (d *decoder) string(parent reflect.Value, value reflect.Value, tags tags) {
+	if tags.cond().nonEmpty() {
+		if !checkCondition(tags.cond(), parent) {
+			return
+		}
+	}
 	if tags.hex().nonEmpty() {
 		size, _ := strconv.Atoi(string(tags.hex()))
 		v := d.readUint(tags.endianness(), size)
