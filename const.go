@@ -335,6 +335,13 @@ const (
 	LqiDeviceTypeEndDevice   LqiDeviceType = 0x02
 )
 
+type GpAction uint8
+
+const (
+	AddGPDFIntoQueue    GpAction = 0x00
+	RemoveGPDFFromQueue GpAction = 0x01
+)
+
 const (
 	ZbBindingAddr   = "0xFFFE"
 	ZbBroadcastAddr = "0xFFFF"

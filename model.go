@@ -1490,3 +1490,26 @@ type AppCnfBdbCommissioningNotification struct {
 	CommissioningMode           CommissioningMode
 	RemainingCommissioningModes *RemainingCommissioningModes
 }
+
+// =======GP=======
+
+type TxOptions struct {
+	UseGpTxQueue         uint8 `bits:"0b00000001" bitmask:"start"`
+	UseCSMAorCA          uint8 `bits:"0b00000010"`
+	UseMacAck            uint8 `bits:"0b00000100"`
+	GPDFFrameTypeForTx   uint8 `bits:"0b00011000"`
+	TxOnMatchingEndpoint uint8 `bits:"0b00100000" bitmask:"end"`
+}
+
+type GpDataReq struct {
+	Action                 GpAction
+	TxOptions              *TxOptions
+	ApplicationID          uint8
+	SrcID                  uint32
+	GPDIEEEAddress         string `hex:"8"`
+	Endpoint               uint8
+	GPDCommandID           uint8
+	GPDASDU                []uint8 `size:"1"`
+	GPEPHandle             uint8
+	GPTxQueueEntryLifetime uint32 `bound:"3"`
+}

@@ -1102,6 +1102,18 @@ func (znp *Znp) AppCnfBdbZedAttemptRecoverNwk(useGlobal uint8, installCode [18]u
 
 // =======GP=======
 
+//GpDataReq callback to receive notifications from BDB process.
+func (znp *Znp) GpDataReq(action GpAction, txOptions *TxOptions, applicationId uint8, srcId uint32,
+	gpdIEEEAddress string, endpoint uint8, gpdCommandId uint8, gpdasdu []uint8,
+	gpepHandle uint8, gpTxQueueEntryLifetime uint32) (rsp *StatusResponse, err error) {
+	req := &GpDataReq{Action: action, TxOptions: txOptions, ApplicationID: applicationId,
+		SrcID: srcId, GPDIEEEAddress: gpdIEEEAddress, Endpoint: endpoint,
+		GPDCommandID: gpdCommandId, GPDASDU: gpdasdu, GPEPHandle: gpepHandle,
+		GPTxQueueEntryLifetime: gpTxQueueEntryLifetime}
+	err = znp.ProcessRequest(unp.C_SREQ, unp.S_GP, 0x01, req, &rsp)
+	return
+}
+
 func init() {
 	//AF
 	asyncCommandRegistry[registryKey{unp.S_AF, 0x80}] = &AfDataConfirm{}
