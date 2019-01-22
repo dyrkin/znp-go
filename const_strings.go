@@ -392,3 +392,36 @@ func (i LqiDeviceType) String() string {
 	}
 	return _LqiDeviceType_name[_LqiDeviceType_index[i]:_LqiDeviceType_index[i+1]]
 }
+
+const _GpAction_name = "GpActionAddGPDFIntoQueueGpActionRemoveGPDFFromQueue"
+
+var _GpAction_index = [...]uint8{0, 24, 51}
+
+func (i GpAction) String() string {
+	if i >= GpAction(len(_GpAction_index)-1) {
+		return "GpAction(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _GpAction_name[_GpAction_index[i]:_GpAction_index[i+1]]
+}
+
+const _GpStatus_name = "GpStatusDropFrameGpStatusMatchGpStatusPassUnprocessedGpStatusTxThenDropGpStatusError"
+
+var _GpStatus_index = [...]uint8{0, 17, 30, 53, 71, 84}
+
+func (i GpStatus) String() string {
+	if i >= GpStatus(len(_GpStatus_index)-1) {
+		return "GpStatus(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _GpStatus_name[_GpStatus_index[i]:_GpStatus_index[i+1]]
+}
+
+const _GpDataIndStatus_name = "GpDataIndStatusSecuritySuccessGpDataIndStatusNoSecurityGpDataIndStatusCounterFailureGpDataIndStatusAuthFailureGpDataIndStatusUnprocessed"
+
+var _GpDataIndStatus_index = [...]uint8{0, 30, 55, 84, 110, 136}
+
+func (i GpDataIndStatus) String() string {
+	if i >= GpDataIndStatus(len(_GpDataIndStatus_index)-1) {
+		return "GpDataIndStatus(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _GpDataIndStatus_name[_GpDataIndStatus_index[i]:_GpDataIndStatus_index[i+1]]
+}
