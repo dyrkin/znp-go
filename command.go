@@ -4,275 +4,339 @@ import unpi "github.com/dyrkin/unpi-go"
 
 var AsyncCommandRegistry = make(map[registryKey]interface{})
 
-type LatencyReq uint8
+type Latency uint8
 
 const (
-	NoLatency LatencyReq = iota
-	FastBeacons
-	SlowBeacons
+	LatencyNoLatency Latency = iota
+	LatencyFastBeacons
+	LatencySlowBeacons
 )
 
 type StartupFromAppStatus uint8
 
 const (
-	RestoredNetworkState StartupFromAppStatus = 0x00
-	NewNetworkState      StartupFromAppStatus = 0x01
-	LeaveAndNotStarted   StartupFromAppStatus = 0x02
+	StartupFromAppStatusRestoredNetworkState StartupFromAppStatus = 0x00
+	StartupFromAppStatusNewNetworkState      StartupFromAppStatus = 0x01
+	StartupFromAppStatusLeaveAndNotStarted   StartupFromAppStatus = 0x02
 )
 
 type Status uint8
 
 const (
-	Success          Status = 0x00
-	Failure          Status = 0x01
-	InvalidParameter Status = 0x02
+	StatusSuccess          Status = 0x00
+	StatusFailure          Status = 0x01
+	StatusInvalidParameter Status = 0x02
 
-	ItemCreatedAndInitialized Status = 0x09
-	InitializationFailed      Status = 0x0a
-	BadLength                 Status = 0x0c
+	StatusItemCreatedAndInitialized Status = 0x09
+	StatusInitializationFailed      Status = 0x0a
+	StatusBadLength                 Status = 0x0c
 
 	// ZStack status values must start at 0x10, after the generic status values (defined in comdef.h)
-	MemError        Status = 0x10
-	BufferFull      Status = 0x11
-	UnsupportedMode Status = 0x12
-	MacMemError     Status = 0x13
+	StatusMemError        Status = 0x10
+	StatusBufferFull      Status = 0x11
+	StatusUnsupportedMode Status = 0x12
+	StatusMacMemError     Status = 0x13
 
-	SapiInProgress Status = 0x20
-	SapiTimeout    Status = 0x21
-	SapiInit       Status = 0x22
+	StatusSapiInProgress Status = 0x20
+	StatusSapiTimeout    Status = 0x21
+	StatusSapiInit       Status = 0x22
 
-	NotAuthorized Status = 0x7E
+	StatusNotAuthorized Status = 0x7E
 
-	MalformedCmd    Status = 0x80
-	UnsupClusterCmd Status = 0x81
+	StatusMalformedCmd    Status = 0x80
+	StatusUnsupClusterCmd Status = 0x81
 
-	ZdpInvalidEp         Status = 0x82 // Invalid endpoint value
-	ZdpNotActive         Status = 0x83 // Endpoint not described by a simple desc.
-	ZdpNotSupported      Status = 0x84 // Optional feature not supported
-	ZdpTimeout           Status = 0x85 // Operation has timed out
-	ZdpNoMatch           Status = 0x86 // No match for end device bind
-	ZdpNoEntry           Status = 0x88 // Unbind request failed, no entry
-	ZdpNoDescriptor      Status = 0x89 // Child descriptor not available
-	ZdpInsufficientSpace Status = 0x8a // Insufficient space to support operation
-	ZdpNotPermitted      Status = 0x8b // Not in proper state to support operation
-	ZdpTableFull         Status = 0x8c // No table space to support operation
-	ZdpNotAuthorized     Status = 0x8d // Permissions indicate request not authorized
-	ZdpBindingTableFull  Status = 0x8e // No binding table space to support operation
+	StatusZdpInvalidEp         Status = 0x82 // Invalid endpoint value
+	StatusZdpNotActive         Status = 0x83 // Endpoint not described by a simple desc.
+	StatusZdpNotSupported      Status = 0x84 // Optional feature not supported
+	StatusZdpTimeout           Status = 0x85 // Operation has timed out
+	StatusZdpNoMatch           Status = 0x86 // No match for end device bind
+	StatusZdpNoEntry           Status = 0x88 // Unbind request failed, no entry
+	StatusZdpNoDescriptor      Status = 0x89 // Child descriptor not available
+	StatusZdpInsufficientSpace Status = 0x8a // Insufficient space to support operation
+	StatusZdpNotPermitted      Status = 0x8b // Not in proper state to support operation
+	StatusZdpTableFull         Status = 0x8c // No table space to support operation
+	StatusZdpNotAuthorized     Status = 0x8d // Permissions indicate request not authorized
+	StatusZdpBindingTableFull  Status = 0x8e // No binding table space to support operation
 
 	// OTA Status values
-	OtaAbort            Status = 0x95
-	OtaImageInvalid     Status = 0x96
-	OtaWaitForData      Status = 0x97
-	OtaNoImageAvailable Status = 0x98
-	OtaRequireMoreImage Status = 0x99
+	StatusOtaAbort            Status = 0x95
+	StatusOtaImageInvalid     Status = 0x96
+	StatusOtaWaitForData      Status = 0x97
+	StatusOtaNoImageAvailable Status = 0x98
+	StatusOtaRequireMoreImage Status = 0x99
 
 	// APS status values
-	ApsFail              Status = 0xb1
-	ApsTableFull         Status = 0xb2
-	ApsIllegalRequest    Status = 0xb3
-	ApsInvalidBinding    Status = 0xb4
-	ApsUnsupportedAttrib Status = 0xb5
-	ApsNotSupported      Status = 0xb6
-	ApsNoAck             Status = 0xb7
-	ApsDuplicateEntry    Status = 0xb8
-	ApsNoBoundDevice     Status = 0xb9
-	ApsNotAllowed        Status = 0xba
-	ApsNotAuthenticated  Status = 0xbb
+	StatusApsFail              Status = 0xb1
+	StatusApsTableFull         Status = 0xb2
+	StatusApsIllegalRequest    Status = 0xb3
+	StatusApsInvalidBinding    Status = 0xb4
+	StatusApsUnsupportedAttrib Status = 0xb5
+	StatusApsNotSupported      Status = 0xb6
+	StatusApsNoAck             Status = 0xb7
+	StatusApsDuplicateEntry    Status = 0xb8
+	StatusApsNoBoundDevice     Status = 0xb9
+	StatusApsNotAllowed        Status = 0xba
+	StatusApsNotAuthenticated  Status = 0xbb
 
 	// Security status values
-	SecNoKey       Status = 0xa1
-	SecOldFrmCount Status = 0xa2
-	SecMaxFrmCount Status = 0xa3
-	SecCcmFail     Status = 0xa4
-	SecFailure     Status = 0xad
+	StatusSecNoKey       Status = 0xa1
+	StatusSecOldFrmCount Status = 0xa2
+	StatusSecMaxFrmCount Status = 0xa3
+	StatusSecCcmFail     Status = 0xa4
+	StatusSecFailure     Status = 0xad
 
 	// NWK status values
-	NwkInvalidParam         Status = 0xc1
-	NwkInvalidRequest       Status = 0xc2
-	NwkNotPermitted         Status = 0xc3
-	NwkStartupFailure       Status = 0xc4
-	NwkAlreadyPresent       Status = 0xc5
-	NwkSyncFailure          Status = 0xc6
-	NwkTableFull            Status = 0xc7
-	NwkUnknownDevice        Status = 0xc8
-	NwkUnsupportedAttribute Status = 0xc9
-	NwkNoNetworks           Status = 0xca
-	NwkLeaveUnconfirmed     Status = 0xcb
-	NwkNoAck                Status = 0xcc // not in spec
-	NwkNoRoute              Status = 0xcd
+	StatusNwkInvalidParam         Status = 0xc1
+	StatusNwkInvalidRequest       Status = 0xc2
+	StatusNwkNotPermitted         Status = 0xc3
+	StatusNwkStartupFailure       Status = 0xc4
+	StatusNwkAlreadyPresent       Status = 0xc5
+	StatusNwkSyncFailure          Status = 0xc6
+	StatusNwkTableFull            Status = 0xc7
+	StatusNwkUnknownDevice        Status = 0xc8
+	StatusNwkUnsupportedAttribute Status = 0xc9
+	StatusNwkNoNetworks           Status = 0xca
+	StatusNwkLeaveUnconfirmed     Status = 0xcb
+	StatusNwkNoAck                Status = 0xcc // not in spec
+	StatusNwkNoRoute              Status = 0xcd
 
 	// MAC status values
 	// ZMacSuccess              Status = 0x00
-	MacBeaconLoss           Status = 0xe0
-	MacChannelAccessFailure Status = 0xe1
-	MacDenied               Status = 0xe2
-	MacDisableTrxFailure    Status = 0xe3
-	MacFailedSecurityCheck  Status = 0xe4
-	MacFrameTooLong         Status = 0xe5
-	MacInvalidGTS           Status = 0xe6
-	MacInvalidHandle        Status = 0xe7
-	MacInvalidParameter     Status = 0xe8
-	MacNoACK                Status = 0xe9
-	MacNoBeacon             Status = 0xea
-	MacNoData               Status = 0xeb
-	MacNoShortAddr          Status = 0xec
-	MacOutOfCap             Status = 0xed
-	MacPANIDConflict        Status = 0xee
-	MacRealignment          Status = 0xef
-	MacTransactionExpired   Status = 0xf0
-	MacTransactionOverFlow  Status = 0xf1
-	MacTxActive             Status = 0xf2
-	MacUnAvailableKey       Status = 0xf3
-	MacUnsupportedAttribute Status = 0xf4
-	MacUnsupported          Status = 0xf5
-	MacSrcMatchInvalidIndex Status = 0xff
+	StatusMacBeaconLoss           Status = 0xe0
+	StatusMacChannelAccessFailure Status = 0xe1
+	StatusMacDenied               Status = 0xe2
+	StatusMacDisableTrxFailure    Status = 0xe3
+	StatusMacFailedSecurityCheck  Status = 0xe4
+	StatusMacFrameTooLong         Status = 0xe5
+	StatusMacInvalidGTS           Status = 0xe6
+	StatusMacInvalidHandle        Status = 0xe7
+	StatusMacInvalidParameter     Status = 0xe8
+	StatusMacNoACK                Status = 0xe9
+	StatusMacNoBeacon             Status = 0xea
+	StatusMacNoData               Status = 0xeb
+	StatusMacNoShortAddr          Status = 0xec
+	StatusMacOutOfCap             Status = 0xed
+	StatusMacPANIDConflict        Status = 0xee
+	StatusMacRealignment          Status = 0xef
+	StatusMacTransactionExpired   Status = 0xf0
+	StatusMacTransactionOverFlow  Status = 0xf1
+	StatusMacTxActive             Status = 0xf2
+	StatusMacUnAvailableKey       Status = 0xf3
+	StatusMacUnsupportedAttribute Status = 0xf4
+	StatusMacUnsupported          Status = 0xf5
+	StatusMacSrcMatchInvalidIndex Status = 0xff
 )
 
 type AddrMode uint8
 
 const (
-	AddrNotPresent AddrMode = iota
-	AddrGroup
-	Addr16Bit
-	Addr64Bit
-	AddrBroadcast AddrMode = 15 //or 0xFF??????
+	AddrModeAddrNotPresent AddrMode = iota
+	AddrModeAddrGroup
+	AddrModeAddr16Bit
+	AddrModeAddr64Bit
+	AddrModeAddrBroadcast AddrMode = 15 //or 0xFF??????
 )
 
 type InterPanCommand uint8
 
 const (
-	InterPanClr InterPanCommand = iota
-	InterPanSet
-	InterPanReg
-	InterPanChk
+	InterPanCommandInterPanClr InterPanCommand = iota
+	InterPanCommandInterPanSet
+	InterPanCommandInterPanReg
+	InterPanCommandInterPanChk
 )
 
 type Channel uint8
 
 const (
-	AIN0 Channel = iota
-	AIN1
-	AIN2
-	AIN3
-	AIN4
-	AIN5
-	AIN6
-	AIN7
-	TemperatureSensor Channel = 0x0E + iota
-	VoltageReading
+	ChannelAIN0 Channel = iota
+	ChannelAIN1
+	ChannelAIN2
+	ChannelAIN3
+	ChannelAIN4
+	ChannelAIN5
+	ChannelAIN6
+	ChannelAIN7
+	ChannelTemperatureSensor Channel = 0x0E + iota
+	ChannelVoltageReading
 )
 
 type Resolution uint8
 
 const (
-	Bit8 Resolution = iota
-	Bit10
-	Bit12
-	Bit14
+	Resolution8Bit Resolution = iota
+	Resolution10Bit
+	Resolution12Bit
+	Resolution14Bit
 )
 
 type Operation uint8
 
 const (
-	SetDirection Operation = iota
-	SetInputMode
-	Set
-	Clear
-	Toggle
-	Read
+	OperationSetDirection Operation = iota
+	OperationSetInputMode
+	OperationSet
+	OperationClear
+	OperationToggle
+	OperationRead
 )
 
 type Reason uint8
 
 const (
-	PowerUp Reason = iota
-	External
-	WatchDog
+	ReasonPowerUp Reason = iota
+	ReasonExternal
+	ReasonWatchDog
 )
 
 type DeviceState uint8
 
 const (
-	InitializedNotStartedAutomatically DeviceState = iota
-	InitializedNotConnectedToAnything
-	DiscoveringPANsToJoin
-	JoiningPAN
-	RejoiningPAN
-	JoinedButNotAuthenticated
-	StartedAsDeviceAfterAuthentication
-	DeviceJoinedAuthenticatedAndIsRouter
-	StartingAsZigBeeCoordinator
-	StartedAsZigBeeCoordinator
-	DeviceHasLostInformationAboutItsParent
-	DeviceSendingKeepAliveToParent
-	DeviceWaitingBeforeRejoin
-	ReJoiningPANInSecureModeScanningAllChannels
-	ReJoiningPANInTrustCenterModeScanningCurrentChannel
-	ReJoiningPANInTrustCenterModeScanningAllChannels
+	DeviceStateInitializedNotStartedAutomatically DeviceState = iota
+	DeviceStateInitializedNotConnectedToAnything
+	DeviceStateDiscoveringPANsToJoin
+	DeviceStateJoiningPAN
+	DeviceStateRejoiningPAN
+	DeviceStateJoinedButNotAuthenticated
+	DeviceStateStartedAsDeviceAfterAuthentication
+	DeviceStateDeviceJoinedAuthenticatedAndIsRouter
+	DeviceStateStartingAsZigBeeCoordinator
+	DeviceStateStartedAsZigBeeCoordinator
+	DeviceStateDeviceHasLostInformationAboutItsParent
+	DeviceStateDeviceSendingKeepAliveToParent
+	DeviceStateDeviceWaitingBeforeRejoin
+	DeviceStateReJoiningPANInSecureModeScanningAllChannels
+	DeviceStateReJoiningPANInTrustCenterModeScanningCurrentChannel
+	DeviceStateReJoiningPANInTrustCenterModeScanningAllChannels
 )
 
 type SubsystemId uint16
 
 const (
-	Sys           SubsystemId = 0x0100
-	Mac           SubsystemId = 0x0200
-	Nwk           SubsystemId = 0x0300
-	Af            SubsystemId = 0x0400
-	Zdo           SubsystemId = 0x0500
-	Sapi          SubsystemId = 0x0600
-	Util          SubsystemId = 0x0700
-	Debug         SubsystemId = 0x0800
-	App           SubsystemId = 0x0900
-	AllSubsystems SubsystemId = 0xFFFF
+	SubsystemIdSys           SubsystemId = 0x0100
+	SubsystemIdMac           SubsystemId = 0x0200
+	SubsystemIdNwk           SubsystemId = 0x0300
+	SubsystemIdAf            SubsystemId = 0x0400
+	SubsystemIdZdo           SubsystemId = 0x0500
+	SubsystemIdSapi          SubsystemId = 0x0600
+	SubsystemIdUtil          SubsystemId = 0x0700
+	SubsystemIdDebug         SubsystemId = 0x0800
+	SubsystemIdApp           SubsystemId = 0x0900
+	SubsystemIdAllSubsystems SubsystemId = 0xFFFF
 )
 
 type Action uint8
 
 const (
-	Disable Action = 0
-	Enable  Action = 1
+	ActionDisable Action = 0
+	ActionEnable  Action = 1
 )
 
 type Shift uint8
 
 const (
-	NoShift  Shift = 0
-	YesShift Shift = 1
+	ShiftNoShift  Shift = 0
+	ShiftYesShift Shift = 1
 )
 
 type Mode uint8
 
 const (
-	OFF Mode = 0
-	ON  Mode = 1
+	ModeOFF Mode = 0
+	ModeON  Mode = 1
 )
 
 type Relation uint8
 
 const (
-	Parent Relation = iota
-	ChildRfd
-	ChildRfdRxIdle
-	ChildFfd
-	ChildFfdRxIdle
-	Neighbor
-	Other
+	RelationParent Relation = iota
+	RelationChildRfd
+	RelationChildRfdRxIdle
+	RelationChildFfd
+	RelationChildFfdRxIdle
+	RelationNeighbor
+	RelationOther
 )
 
 type ReqType uint8
 
 const (
-	SingleDeviceResponse      ReqType = 0x00
-	AssociatedDevicesResponse ReqType = 0x01
+	ReqTypeSingleDeviceResponse      ReqType = 0x00
+	ReqTypeAssociatedDevicesResponse ReqType = 0x01
 )
 
 type RouteStatus uint8
 
 const (
-	Active            RouteStatus = 0x00
-	DiscoveryUnderway RouteStatus = 0x01
-	DiscoveryFailed   RouteStatus = 0x02
-	Inactive          RouteStatus = 0x03
+	RouteStatusActive            RouteStatus = 0x00
+	RouteStatusDiscoveryUnderway RouteStatus = 0x01
+	RouteStatusDiscoveryFailed   RouteStatus = 0x02
+	RouteStatusInactive          RouteStatus = 0x03
+)
+
+type Timeout uint8
+
+const (
+	Timeout10Seconds    Timeout = 0x00
+	Timeout2Minutes     Timeout = 0x01
+	Timeout4Minutes     Timeout = 0x02
+	Timeout8Minutes     Timeout = 0x03
+	Timeout16Minutes    Timeout = 0x04
+	Timeout32Minutes    Timeout = 0x05
+	Timeout64Minutes    Timeout = 0x06
+	Timeout128Minutes   Timeout = 0x07
+	Timeout256Minutes   Timeout = 0x08 //(Default)
+	Timeout512Minutes   Timeout = 0x09
+	Timeout1024Minutes  Timeout = 0x0A
+	Timeout2048Minutes  Timeout = 0x0B
+	Timeout4096Minutes  Timeout = 0x0C
+	Timeout8192Minutes  Timeout = 0x0D
+	Timeout16384Minutes Timeout = 0x0E
+)
+
+type InstallCodeFormat uint8
+
+const (
+	InstallCodeFormatCodePlusCrc               InstallCodeFormat = 0x00
+	InstallCodeFormatKeyDerivedFromInstallCode InstallCodeFormat = 0x01
+)
+
+type CommissioningMode uint8
+
+const (
+	CommissioningModeInitialization    CommissioningMode = 0x00
+	CommissioningModeTouchLink         CommissioningMode = 0x01
+	CommissioningModeNetworkSteering   CommissioningMode = 0x02
+	CommissioningModeNetworkFormation  CommissioningMode = 0x04
+	CommissioningModeFindingAndBinding CommissioningMode = 0x08
+)
+
+type CommissioningStatus uint8
+
+const (
+	CommissioningStatusSuccess                   CommissioningStatus = 0x00
+	CommissioningStatusInProgress                CommissioningStatus = 0x01
+	CommissioningStatusNoNetwork                 CommissioningStatus = 0x02
+	CommissioningStatusTlTargetFailure           CommissioningStatus = 0x03
+	CommissioningStatusTlNotAaCapable            CommissioningStatus = 0x04
+	CommissioningStatusTlNoScanResponse          CommissioningStatus = 0x05
+	CommissioningStatusTlNotPermitted            CommissioningStatus = 0x06
+	CommissioningStatusTclkExFailure             CommissioningStatus = 0x07
+	CommissioningStatusFormationFailure          CommissioningStatus = 0x08
+	CommissioningStatusFbTargetInProgress        CommissioningStatus = 0x09
+	CommissioningStatusFbInitiatorInProgress     CommissioningStatus = 0x0A
+	CommissioningStatusFbNoIdentifyQueryResponse CommissioningStatus = 0x0B
+	CommissioningStatusFbBindingTableFull        CommissioningStatus = 0x0C
+	CommissioningStatusNetwork                   CommissioningStatus = 0x0D
+)
+
+type LqiDeviceType uint8
+
+const (
+	LqiDeviceTypeCoordinator LqiDeviceType = 0x00
+	LqiDeviceTypeRouter      LqiDeviceType = 0x01
+	LqiDeviceTypeEndDevice   LqiDeviceType = 0x02
 )
 
 type StatusResponse struct {
@@ -286,13 +350,13 @@ type AfRegister struct {
 	AppProfID         uint16
 	AppDeviceID       uint16
 	AddDevVer         uint8
-	LatencyReq        LatencyReq
+	LatencyReq        Latency
 	AppInClusterList  []uint16 `size:"1"`
 	AppOutClusterList []uint16 `size:"1"`
 }
 
 func (znp *Znp) AfRegister(endPoint uint8, appProfID uint16, appDeviceID uint16, addDevVer uint8,
-	latencyReq LatencyReq, appInClusterList []uint16, appOutClusterList []uint16) (rsp *StatusResponse, err error) {
+	latencyReq Latency, appInClusterList []uint16, appOutClusterList []uint16) (rsp *StatusResponse, err error) {
 	req := &AfRegister{EndPoint: endPoint, AppProfID: appProfID, AppDeviceID: appDeviceID,
 		AddDevVer: addDevVer, LatencyReq: latencyReq, AppInClusterList: appInClusterList, AppOutClusterList: appOutClusterList}
 	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_AF, 0, req, &rsp)
@@ -1690,6 +1754,8 @@ type UtilZclKeyEstablishInd struct {
 	Suite    uint16
 }
 
+// =======ZDO=======
+
 type ZdoNwkAddrReq struct {
 	IEEEAddress string `hex:"8"`
 	ReqType     ReqType
@@ -2564,21 +2630,13 @@ type ZdoMgmtNwkDiscRsp struct {
 	NetworkList  []*Network `size:"1"`
 }
 
-type LqiDeviceType uint8
-
-const (
-	Coordinator LqiDeviceType = 0x00
-	Router      LqiDeviceType = 0x01
-	EndDevice   LqiDeviceType = 0x02
-)
-
 type NeighborLqi struct {
 	ExtendedPanID   uint64
 	ExtendedAddress string        `hex:"8"`
 	NetworkAddress  string        `hex:"2"`
 	DeviceType      LqiDeviceType `bits:"0b00000011" bitmask:"start"`
 	RxOnWhenIdle    uint8         `bits:"0b00001100"`
-	Relationship    uint8         `bits:"0b00110000"`
+	Relationship    uint8         `bits:"0b00110000" bitmask:"end"`
 	PermitJoining   uint8
 	Depth           uint8
 	LQI             uint8
@@ -2727,6 +2785,146 @@ type ZdoPermitJoinInd struct {
 	PermitJoinDuration uint8
 }
 
+// =======APP=======
+
+type AppCnfSetNwkFrameCounter struct {
+	FrameCounterValue uint8
+}
+
+//AppCnfSetNwkFrameCounter sets the network frame counter to the value specified in the Frame Counter Value.
+//For projects with multiple instances of frame counter, the message sets the frame counter of the
+//current network.
+func (znp *Znp) AppCnfSetNwkFrameCounter(frameCounterValue uint8) (rsp *StatusResponse, err error) {
+	req := &AppCnfSetNwkFrameCounter{FrameCounterValue: frameCounterValue}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0xFF, req, &rsp)
+	return
+}
+
+type AppCnfSetDefaultEndDeviceTimeout struct {
+	Timeout Timeout
+}
+
+//AppCnfSetDefaultEndDeviceTimeout sets the default value used by parent device to expire legacy child devices.
+func (znp *Znp) AppCnfSetDefaultEndDeviceTimeout(timeout Timeout) (rsp *StatusResponse, err error) {
+	req := &AppCnfSetDefaultEndDeviceTimeout{Timeout: timeout}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x01, req, &rsp)
+	return
+}
+
+type AppCnfSetEndDeviceTimeout struct {
+	Timeout Timeout
+}
+
+//AppCnfSetEndDeviceTimeout sets in ZED the timeout value to be send to parent device for child expiring.
+func (znp *Znp) AppCnfSetEndDeviceTimeout(timeout Timeout) (rsp *StatusResponse, err error) {
+	req := &AppCnfSetEndDeviceTimeout{Timeout: timeout}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x02, req, &rsp)
+	return
+}
+
+type AppCnfSetAllowRejoinTcPolicy struct {
+	AllowRejoin uint8
+}
+
+//AppCnfSetAllowRejoinTcPolicy sets the AllowRejoin TC policy.
+func (znp *Znp) AppCnfSetAllowRejoinTcPolicy(allowRejoin uint8) (rsp *StatusResponse, err error) {
+	req := &AppCnfSetAllowRejoinTcPolicy{AllowRejoin: allowRejoin}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x03, req, &rsp)
+	return
+}
+
+type AppCnfBdbStartCommissioning struct {
+	CommissioningMode CommissioningMode
+}
+
+//AppCnfBdbStartCommissioning set the commissioning methods to be executed. Initialization of BDB is executed with this call,
+//regardless of its parameters.
+func (znp *Znp) AppCnfBdbStartCommissioning(commissioningMode CommissioningMode) (rsp *StatusResponse, err error) {
+	req := &AppCnfBdbStartCommissioning{CommissioningMode: commissioningMode}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x05, req, &rsp)
+	return
+}
+
+type AppCnfBdbSetChannel struct {
+	IsPrimary uint8
+	Channel   *Channels
+}
+
+//AppCnfBdbSetChannel sets  BDB primary or secondary channel masks.
+func (znp *Znp) AppCnfBdbSetChannel(isPrimary uint8, channel *Channels) (rsp *StatusResponse, err error) {
+	req := &AppCnfBdbSetChannel{IsPrimary: isPrimary, Channel: channel}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x08, req, &rsp)
+	return
+}
+
+type AppCnfBdbAddInstallCode struct {
+	InstallCodeFormat InstallCodeFormat
+	IEEEAddr          string `hex:"8"`
+	InstallCode       []uint8
+}
+
+//AppCnfBdbAddInstallCode add a preconfigured key (plain key or IC) to Trust Center device.
+func (znp *Znp) AppCnfBdbAddInstallCode(installCodeFormat InstallCodeFormat, ieeeAddr string, installCode []uint8) (rsp *StatusResponse, err error) {
+	req := &AppCnfBdbAddInstallCode{InstallCodeFormat: installCodeFormat, IEEEAddr: ieeeAddr, InstallCode: installCode}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x04, req, &rsp)
+	return
+}
+
+type AppCnfBdbSetTcRequireKeyExchange struct {
+	BdbTrustCenterRequireKeyExchange uint8
+}
+
+//AppCnfBdbSetTcRequireKeyExchange sets the policy flag on Trust Center device to mandate or not the TCLK exchange procedure.
+func (znp *Znp) AppCnfBdbSetTcRequireKeyExchange(bdbTrustCenterRequireKeyExchange uint8) (rsp *StatusResponse, err error) {
+	req := &AppCnfBdbSetTcRequireKeyExchange{BdbTrustCenterRequireKeyExchange: bdbTrustCenterRequireKeyExchange}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x09, req, &rsp)
+	return
+}
+
+type AppCnfBdbSetJoinUsesInstallCodeKey struct {
+	BdbJoinUsesInstallCodeKey uint8
+}
+
+//AppCnfBdbSetJoinUsesInstallCodeKey sets the policy to mandate or not the usage of an Install Code upon joining.
+func (znp *Znp) AppCnfBdbSetJoinUsesInstallCodeKey(bdbJoinUsesInstallCodeKey uint8) (rsp *StatusResponse, err error) {
+	req := &AppCnfBdbSetJoinUsesInstallCodeKey{BdbJoinUsesInstallCodeKey: bdbJoinUsesInstallCodeKey}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x06, req, &rsp)
+	return
+}
+
+type AppCnfBdbSetActiveDefaultCentralizedKey struct {
+	UseGlobal   uint8
+	InstallCode [18]uint8
+}
+
+//AppCnfBdbSetActiveDefaultCentralizedKey on joining devices, set the default key or an install code to attempt to join the network.
+func (znp *Znp) AppCnfBdbSetActiveDefaultCentralizedKey(useGlobal uint8, installCode [18]uint8) (rsp *StatusResponse, err error) {
+	req := &AppCnfBdbSetActiveDefaultCentralizedKey{UseGlobal: useGlobal, InstallCode: installCode}
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x07, req, &rsp)
+	return
+}
+
+//AppCnfBdbZedAttemptRecoverNwk instruct the ZED to try to rejoin its previews network. Use only in ZED devices.
+func (znp *Znp) AppCnfBdbZedAttemptRecoverNwk(useGlobal uint8, installCode [18]uint8) (rsp *StatusResponse, err error) {
+	err = znp.ProcessRequest(unpi.C_SREQ, unpi.S_APP, 0x0A, nil, &rsp)
+	return
+}
+
+type RemainingCommissioningModes struct {
+	InitiatorTl    uint8 `bits:"0x01" bitmask:"start"`
+	NwkSteering    uint8 `bits:"0x02"`
+	NwkFormation   uint8 `bits:"0x04"`
+	FindingBinding uint8 `bits:"0x08"`
+	Initialization uint8 `bits:"0x10"`
+	ParentLost     uint8 `bits:"0x20" bitmask:"end"`
+}
+
+type AppCnfBdbCommissioningNotification struct {
+	CommissioningStatus         CommissioningStatus
+	CommissioningMode           CommissioningMode
+	RemainingCommissioningModes *RemainingCommissioningModes
+}
+
 func init() {
 	//AF
 	AsyncCommandRegistry[registryKey{unpi.S_AF, 0x80}] = &AfDataConfirm{}
@@ -2787,4 +2985,7 @@ func init() {
 	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xFF}] = &ZdoMsgCbIncoming{}
 	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xCA}] = &ZdoTcDevInd{}
 	AsyncCommandRegistry[registryKey{unpi.S_ZDO, 0xCB}] = &ZdoPermitJoinInd{}
+
+	//APP
+	AsyncCommandRegistry[registryKey{unpi.S_APP, 0x80}] = &AppCnfBdbCommissioningNotification{}
 }

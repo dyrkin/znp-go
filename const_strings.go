@@ -4,20 +4,20 @@ package znp
 
 import "strconv"
 
-const _LatencyReq_name = "NoLatencyFastBeaconsSlowBeacons"
+const _Latency_name = "LatencyNoLatencyLatencyFastBeaconsLatencySlowBeacons"
 
-var _LatencyReq_index = [...]uint8{0, 9, 20, 31}
+var _Latency_index = [...]uint8{0, 16, 34, 52}
 
-func (i LatencyReq) String() string {
-	if i >= LatencyReq(len(_LatencyReq_index)-1) {
-		return "LatencyReq(" + strconv.FormatInt(int64(i), 10) + ")"
+func (i Latency) String() string {
+	if i >= Latency(len(_Latency_index)-1) {
+		return "Latency(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _LatencyReq_name[_LatencyReq_index[i]:_LatencyReq_index[i+1]]
+	return _Latency_name[_Latency_index[i]:_Latency_index[i+1]]
 }
 
-const _StartupFromAppStatus_name = "RestoredNetworkStateNewNetworkStateLeaveAndNotStarted"
+const _StartupFromAppStatus_name = "StartupFromAppStatusRestoredNetworkStateStartupFromAppStatusNewNetworkStateStartupFromAppStatusLeaveAndNotStarted"
 
-var _StartupFromAppStatus_index = [...]uint8{0, 20, 35, 53}
+var _StartupFromAppStatus_index = [...]uint8{0, 40, 75, 113}
 
 func (i StartupFromAppStatus) String() string {
 	if i >= StartupFromAppStatus(len(_StartupFromAppStatus_index)-1) {
@@ -26,94 +26,94 @@ func (i StartupFromAppStatus) String() string {
 	return _StartupFromAppStatus_name[_StartupFromAppStatus_index[i]:_StartupFromAppStatus_index[i+1]]
 }
 
-const _Status_name = "SuccessFailureInvalidParameterItemCreatedAndInitializedInitializationFailedBadLengthMemErrorBufferFullUnsupportedModeMacMemErrorSapiInProgressSapiTimeoutSapiInitNotAuthorizedMalformedCmdUnsupClusterCmdZdpInvalidEpZdpNotActiveZdpNotSupportedZdpTimeoutZdpNoMatchZdpNoEntryZdpNoDescriptorZdpInsufficientSpaceZdpNotPermittedZdpTableFullZdpNotAuthorizedZdpBindingTableFullOtaAbortOtaImageInvalidOtaWaitForDataOtaNoImageAvailableOtaRequireMoreImageSecNoKeySecOldFrmCountSecMaxFrmCountSecCcmFailSecFailureApsFailApsTableFullApsIllegalRequestApsInvalidBindingApsUnsupportedAttribApsNotSupportedApsNoAckApsDuplicateEntryApsNoBoundDeviceApsNotAllowedApsNotAuthenticatedNwkInvalidParamNwkInvalidRequestNwkNotPermittedNwkStartupFailureNwkAlreadyPresentNwkSyncFailureNwkTableFullNwkUnknownDeviceNwkUnsupportedAttributeNwkNoNetworksNwkLeaveUnconfirmedNwkNoAckNwkNoRouteMacBeaconLossMacChannelAccessFailureMacDeniedMacDisableTrxFailureMacFailedSecurityCheckMacFrameTooLongMacInvalidGTSMacInvalidHandleMacInvalidParameterMacNoACKMacNoBeaconMacNoDataMacNoShortAddrMacOutOfCapMacPANIDConflictMacRealignmentMacTransactionExpiredMacTransactionOverFlowMacTxActiveMacUnAvailableKeyMacUnsupportedAttributeMacUnsupportedMacSrcMatchInvalidIndex"
+const _Status_name = "StatusSuccessStatusFailureStatusInvalidParameterStatusItemCreatedAndInitializedStatusInitializationFailedStatusBadLengthStatusMemErrorStatusBufferFullStatusUnsupportedModeStatusMacMemErrorStatusSapiInProgressStatusSapiTimeoutStatusSapiInitStatusNotAuthorizedStatusMalformedCmdStatusUnsupClusterCmdStatusZdpInvalidEpStatusZdpNotActiveStatusZdpNotSupportedStatusZdpTimeoutStatusZdpNoMatchStatusZdpNoEntryStatusZdpNoDescriptorStatusZdpInsufficientSpaceStatusZdpNotPermittedStatusZdpTableFullStatusZdpNotAuthorizedStatusZdpBindingTableFullStatusOtaAbortStatusOtaImageInvalidStatusOtaWaitForDataStatusOtaNoImageAvailableStatusOtaRequireMoreImageStatusSecNoKeyStatusSecOldFrmCountStatusSecMaxFrmCountStatusSecCcmFailStatusSecFailureStatusApsFailStatusApsTableFullStatusApsIllegalRequestStatusApsInvalidBindingStatusApsUnsupportedAttribStatusApsNotSupportedStatusApsNoAckStatusApsDuplicateEntryStatusApsNoBoundDeviceStatusApsNotAllowedStatusApsNotAuthenticatedStatusNwkInvalidParamStatusNwkInvalidRequestStatusNwkNotPermittedStatusNwkStartupFailureStatusNwkAlreadyPresentStatusNwkSyncFailureStatusNwkTableFullStatusNwkUnknownDeviceStatusNwkUnsupportedAttributeStatusNwkNoNetworksStatusNwkLeaveUnconfirmedStatusNwkNoAckStatusNwkNoRouteStatusMacBeaconLossStatusMacChannelAccessFailureStatusMacDeniedStatusMacDisableTrxFailureStatusMacFailedSecurityCheckStatusMacFrameTooLongStatusMacInvalidGTSStatusMacInvalidHandleStatusMacInvalidParameterStatusMacNoACKStatusMacNoBeaconStatusMacNoDataStatusMacNoShortAddrStatusMacOutOfCapStatusMacPANIDConflictStatusMacRealignmentStatusMacTransactionExpiredStatusMacTransactionOverFlowStatusMacTxActiveStatusMacUnAvailableKeyStatusMacUnsupportedAttributeStatusMacUnsupportedStatusMacSrcMatchInvalidIndex"
 
 var _Status_map = map[Status]string{
-	0:   _Status_name[0:7],
-	1:   _Status_name[7:14],
-	2:   _Status_name[14:30],
-	9:   _Status_name[30:55],
-	10:  _Status_name[55:75],
-	12:  _Status_name[75:84],
-	16:  _Status_name[84:92],
-	17:  _Status_name[92:102],
-	18:  _Status_name[102:117],
-	19:  _Status_name[117:128],
-	32:  _Status_name[128:142],
-	33:  _Status_name[142:153],
-	34:  _Status_name[153:161],
-	126: _Status_name[161:174],
-	128: _Status_name[174:186],
-	129: _Status_name[186:201],
-	130: _Status_name[201:213],
-	131: _Status_name[213:225],
-	132: _Status_name[225:240],
-	133: _Status_name[240:250],
-	134: _Status_name[250:260],
-	136: _Status_name[260:270],
-	137: _Status_name[270:285],
-	138: _Status_name[285:305],
-	139: _Status_name[305:320],
-	140: _Status_name[320:332],
-	141: _Status_name[332:348],
-	142: _Status_name[348:367],
-	149: _Status_name[367:375],
-	150: _Status_name[375:390],
-	151: _Status_name[390:404],
-	152: _Status_name[404:423],
-	153: _Status_name[423:442],
-	161: _Status_name[442:450],
-	162: _Status_name[450:464],
-	163: _Status_name[464:478],
-	164: _Status_name[478:488],
-	173: _Status_name[488:498],
-	177: _Status_name[498:505],
-	178: _Status_name[505:517],
-	179: _Status_name[517:534],
-	180: _Status_name[534:551],
-	181: _Status_name[551:571],
-	182: _Status_name[571:586],
-	183: _Status_name[586:594],
-	184: _Status_name[594:611],
-	185: _Status_name[611:627],
-	186: _Status_name[627:640],
-	187: _Status_name[640:659],
-	193: _Status_name[659:674],
-	194: _Status_name[674:691],
-	195: _Status_name[691:706],
-	196: _Status_name[706:723],
-	197: _Status_name[723:740],
-	198: _Status_name[740:754],
-	199: _Status_name[754:766],
-	200: _Status_name[766:782],
-	201: _Status_name[782:805],
-	202: _Status_name[805:818],
-	203: _Status_name[818:837],
-	204: _Status_name[837:845],
-	205: _Status_name[845:855],
-	224: _Status_name[855:868],
-	225: _Status_name[868:891],
-	226: _Status_name[891:900],
-	227: _Status_name[900:920],
-	228: _Status_name[920:942],
-	229: _Status_name[942:957],
-	230: _Status_name[957:970],
-	231: _Status_name[970:986],
-	232: _Status_name[986:1005],
-	233: _Status_name[1005:1013],
-	234: _Status_name[1013:1024],
-	235: _Status_name[1024:1033],
-	236: _Status_name[1033:1047],
-	237: _Status_name[1047:1058],
-	238: _Status_name[1058:1074],
-	239: _Status_name[1074:1088],
-	240: _Status_name[1088:1109],
-	241: _Status_name[1109:1131],
-	242: _Status_name[1131:1142],
-	243: _Status_name[1142:1159],
-	244: _Status_name[1159:1182],
-	245: _Status_name[1182:1196],
-	255: _Status_name[1196:1219],
+	0:   _Status_name[0:13],
+	1:   _Status_name[13:26],
+	2:   _Status_name[26:48],
+	9:   _Status_name[48:79],
+	10:  _Status_name[79:105],
+	12:  _Status_name[105:120],
+	16:  _Status_name[120:134],
+	17:  _Status_name[134:150],
+	18:  _Status_name[150:171],
+	19:  _Status_name[171:188],
+	32:  _Status_name[188:208],
+	33:  _Status_name[208:225],
+	34:  _Status_name[225:239],
+	126: _Status_name[239:258],
+	128: _Status_name[258:276],
+	129: _Status_name[276:297],
+	130: _Status_name[297:315],
+	131: _Status_name[315:333],
+	132: _Status_name[333:354],
+	133: _Status_name[354:370],
+	134: _Status_name[370:386],
+	136: _Status_name[386:402],
+	137: _Status_name[402:423],
+	138: _Status_name[423:449],
+	139: _Status_name[449:470],
+	140: _Status_name[470:488],
+	141: _Status_name[488:510],
+	142: _Status_name[510:535],
+	149: _Status_name[535:549],
+	150: _Status_name[549:570],
+	151: _Status_name[570:590],
+	152: _Status_name[590:615],
+	153: _Status_name[615:640],
+	161: _Status_name[640:654],
+	162: _Status_name[654:674],
+	163: _Status_name[674:694],
+	164: _Status_name[694:710],
+	173: _Status_name[710:726],
+	177: _Status_name[726:739],
+	178: _Status_name[739:757],
+	179: _Status_name[757:780],
+	180: _Status_name[780:803],
+	181: _Status_name[803:829],
+	182: _Status_name[829:850],
+	183: _Status_name[850:864],
+	184: _Status_name[864:887],
+	185: _Status_name[887:909],
+	186: _Status_name[909:928],
+	187: _Status_name[928:953],
+	193: _Status_name[953:974],
+	194: _Status_name[974:997],
+	195: _Status_name[997:1018],
+	196: _Status_name[1018:1041],
+	197: _Status_name[1041:1064],
+	198: _Status_name[1064:1084],
+	199: _Status_name[1084:1102],
+	200: _Status_name[1102:1124],
+	201: _Status_name[1124:1153],
+	202: _Status_name[1153:1172],
+	203: _Status_name[1172:1197],
+	204: _Status_name[1197:1211],
+	205: _Status_name[1211:1227],
+	224: _Status_name[1227:1246],
+	225: _Status_name[1246:1275],
+	226: _Status_name[1275:1290],
+	227: _Status_name[1290:1316],
+	228: _Status_name[1316:1344],
+	229: _Status_name[1344:1365],
+	230: _Status_name[1365:1384],
+	231: _Status_name[1384:1406],
+	232: _Status_name[1406:1431],
+	233: _Status_name[1431:1445],
+	234: _Status_name[1445:1462],
+	235: _Status_name[1462:1477],
+	236: _Status_name[1477:1497],
+	237: _Status_name[1497:1514],
+	238: _Status_name[1514:1536],
+	239: _Status_name[1536:1556],
+	240: _Status_name[1556:1583],
+	241: _Status_name[1583:1611],
+	242: _Status_name[1611:1628],
+	243: _Status_name[1628:1651],
+	244: _Status_name[1651:1680],
+	245: _Status_name[1680:1700],
+	255: _Status_name[1700:1729],
 }
 
 func (i Status) String() string {
@@ -124,12 +124,12 @@ func (i Status) String() string {
 }
 
 const (
-	_AddrMode_name_0 = "AddrNotPresentAddrGroupAddr16BitAddr64Bit"
-	_AddrMode_name_1 = "AddrBroadcast"
+	_AddrMode_name_0 = "AddrModeAddrNotPresentAddrModeAddrGroupAddrModeAddr16BitAddrModeAddr64Bit"
+	_AddrMode_name_1 = "AddrModeAddrBroadcast"
 )
 
 var (
-	_AddrMode_index_0 = [...]uint8{0, 14, 23, 32, 41}
+	_AddrMode_index_0 = [...]uint8{0, 22, 39, 56, 73}
 )
 
 func (i AddrMode) String() string {
@@ -143,9 +143,9 @@ func (i AddrMode) String() string {
 	}
 }
 
-const _InterPanCommand_name = "InterPanClrInterPanSetInterPanRegInterPanChk"
+const _InterPanCommand_name = "InterPanCommandInterPanClrInterPanCommandInterPanSetInterPanCommandInterPanRegInterPanCommandInterPanChk"
 
-var _InterPanCommand_index = [...]uint8{0, 11, 22, 33, 44}
+var _InterPanCommand_index = [...]uint8{0, 26, 52, 78, 104}
 
 func (i InterPanCommand) String() string {
 	if i >= InterPanCommand(len(_InterPanCommand_index)-1) {
@@ -155,13 +155,13 @@ func (i InterPanCommand) String() string {
 }
 
 const (
-	_Channel_name_0 = "AIN0AIN1AIN2AIN3AIN4AIN5AIN6AIN7"
-	_Channel_name_1 = "TemperatureSensorVoltageReading"
+	_Channel_name_0 = "ChannelAIN0ChannelAIN1ChannelAIN2ChannelAIN3ChannelAIN4ChannelAIN5ChannelAIN6ChannelAIN7"
+	_Channel_name_1 = "ChannelTemperatureSensorChannelVoltageReading"
 )
 
 var (
-	_Channel_index_0 = [...]uint8{0, 4, 8, 12, 16, 20, 24, 28, 32}
-	_Channel_index_1 = [...]uint8{0, 17, 31}
+	_Channel_index_0 = [...]uint8{0, 11, 22, 33, 44, 55, 66, 77, 88}
+	_Channel_index_1 = [...]uint8{0, 24, 45}
 )
 
 func (i Channel) String() string {
@@ -176,9 +176,9 @@ func (i Channel) String() string {
 	}
 }
 
-const _Resolution_name = "Bit8Bit10Bit12Bit14"
+const _Resolution_name = "Resolution8BitResolution10BitResolution12BitResolution14Bit"
 
-var _Resolution_index = [...]uint8{0, 4, 9, 14, 19}
+var _Resolution_index = [...]uint8{0, 14, 29, 44, 59}
 
 func (i Resolution) String() string {
 	if i >= Resolution(len(_Resolution_index)-1) {
@@ -187,9 +187,9 @@ func (i Resolution) String() string {
 	return _Resolution_name[_Resolution_index[i]:_Resolution_index[i+1]]
 }
 
-const _Operation_name = "SetDirectionSetInputModeSetClearToggleRead"
+const _Operation_name = "OperationSetDirectionOperationSetInputModeOperationSetOperationClearOperationToggleOperationRead"
 
-var _Operation_index = [...]uint8{0, 12, 24, 27, 32, 38, 42}
+var _Operation_index = [...]uint8{0, 21, 42, 54, 68, 83, 96}
 
 func (i Operation) String() string {
 	if i >= Operation(len(_Operation_index)-1) {
@@ -198,9 +198,9 @@ func (i Operation) String() string {
 	return _Operation_name[_Operation_index[i]:_Operation_index[i+1]]
 }
 
-const _Reason_name = "PowerUpExternalWatchDog"
+const _Reason_name = "ReasonPowerUpReasonExternalReasonWatchDog"
 
-var _Reason_index = [...]uint8{0, 7, 15, 23}
+var _Reason_index = [...]uint8{0, 13, 27, 41}
 
 func (i Reason) String() string {
 	if i >= Reason(len(_Reason_index)-1) {
@@ -209,9 +209,9 @@ func (i Reason) String() string {
 	return _Reason_name[_Reason_index[i]:_Reason_index[i+1]]
 }
 
-const _DeviceState_name = "InitializedNotStartedAutomaticallyInitializedNotConnectedToAnythingDiscoveringPANsToJoinJoiningPANRejoiningPANJoinedButNotAuthenticatedStartedAsDeviceAfterAuthenticationDeviceJoinedAuthenticatedAndIsRouterStartingAsZigBeeCoordinatorStartedAsZigBeeCoordinatorDeviceHasLostInformationAboutItsParent"
+const _DeviceState_name = "DeviceStateInitializedNotStartedAutomaticallyDeviceStateInitializedNotConnectedToAnythingDeviceStateDiscoveringPANsToJoinDeviceStateJoiningPANDeviceStateRejoiningPANDeviceStateJoinedButNotAuthenticatedDeviceStateStartedAsDeviceAfterAuthenticationDeviceStateDeviceJoinedAuthenticatedAndIsRouterDeviceStateStartingAsZigBeeCoordinatorDeviceStateStartedAsZigBeeCoordinatorDeviceStateDeviceHasLostInformationAboutItsParentDeviceStateDeviceSendingKeepAliveToParentDeviceStateDeviceWaitingBeforeRejoinDeviceStateReJoiningPANInSecureModeScanningAllChannelsDeviceStateReJoiningPANInTrustCenterModeScanningCurrentChannelDeviceStateReJoiningPANInTrustCenterModeScanningAllChannels"
 
-var _DeviceState_index = [...]uint16{0, 34, 67, 88, 98, 110, 135, 169, 205, 232, 258, 296}
+var _DeviceState_index = [...]uint16{0, 45, 89, 121, 142, 165, 201, 246, 293, 331, 368, 417, 458, 494, 548, 610, 669}
 
 func (i DeviceState) String() string {
 	if i >= DeviceState(len(_DeviceState_index)-1) {
@@ -221,16 +221,16 @@ func (i DeviceState) String() string {
 }
 
 const (
-	_SubsystemId_name_0 = "Sys"
-	_SubsystemId_name_1 = "Mac"
-	_SubsystemId_name_2 = "Nwk"
-	_SubsystemId_name_3 = "Af"
-	_SubsystemId_name_4 = "Zdo"
-	_SubsystemId_name_5 = "Sapi"
-	_SubsystemId_name_6 = "Util"
-	_SubsystemId_name_7 = "Debug"
-	_SubsystemId_name_8 = "App"
-	_SubsystemId_name_9 = "AllSubsystems"
+	_SubsystemId_name_0 = "SubsystemIdSys"
+	_SubsystemId_name_1 = "SubsystemIdMac"
+	_SubsystemId_name_2 = "SubsystemIdNwk"
+	_SubsystemId_name_3 = "SubsystemIdAf"
+	_SubsystemId_name_4 = "SubsystemIdZdo"
+	_SubsystemId_name_5 = "SubsystemIdSapi"
+	_SubsystemId_name_6 = "SubsystemIdUtil"
+	_SubsystemId_name_7 = "SubsystemIdDebug"
+	_SubsystemId_name_8 = "SubsystemIdApp"
+	_SubsystemId_name_9 = "SubsystemIdAllSubsystems"
 )
 
 func (i SubsystemId) String() string {
@@ -260,9 +260,9 @@ func (i SubsystemId) String() string {
 	}
 }
 
-const _Action_name = "DisableEnable"
+const _Action_name = "ActionDisableActionEnable"
 
-var _Action_index = [...]uint8{0, 7, 13}
+var _Action_index = [...]uint8{0, 13, 25}
 
 func (i Action) String() string {
 	if i >= Action(len(_Action_index)-1) {
@@ -271,9 +271,9 @@ func (i Action) String() string {
 	return _Action_name[_Action_index[i]:_Action_index[i+1]]
 }
 
-const _Shift_name = "NoShiftYesShift"
+const _Shift_name = "ShiftNoShiftShiftYesShift"
 
-var _Shift_index = [...]uint8{0, 7, 15}
+var _Shift_index = [...]uint8{0, 12, 25}
 
 func (i Shift) String() string {
 	if i >= Shift(len(_Shift_index)-1) {
@@ -282,9 +282,9 @@ func (i Shift) String() string {
 	return _Shift_name[_Shift_index[i]:_Shift_index[i+1]]
 }
 
-const _Mode_name = "OFFON"
+const _Mode_name = "ModeOFFModeON"
 
-var _Mode_index = [...]uint8{0, 3, 5}
+var _Mode_index = [...]uint8{0, 7, 13}
 
 func (i Mode) String() string {
 	if i >= Mode(len(_Mode_index)-1) {
@@ -293,9 +293,9 @@ func (i Mode) String() string {
 	return _Mode_name[_Mode_index[i]:_Mode_index[i+1]]
 }
 
-const _Relation_name = "ParentChildRfdChildRfdRxIdleChildFfdChildFfdRxIdleNeighborOther"
+const _Relation_name = "RelationParentRelationChildRfdRelationChildRfdRxIdleRelationChildFfdRelationChildFfdRxIdleRelationNeighborRelationOther"
 
-var _Relation_index = [...]uint8{0, 6, 14, 28, 36, 50, 58, 63}
+var _Relation_index = [...]uint8{0, 14, 30, 52, 68, 90, 106, 119}
 
 func (i Relation) String() string {
 	if i >= Relation(len(_Relation_index)-1) {
@@ -304,13 +304,91 @@ func (i Relation) String() string {
 	return _Relation_name[_Relation_index[i]:_Relation_index[i+1]]
 }
 
-const _ReqType_name = "SingleDeviceResponseAssociatedDevicesResponse"
+const _ReqType_name = "ReqTypeSingleDeviceResponseReqTypeAssociatedDevicesResponse"
 
-var _ReqType_index = [...]uint8{0, 20, 45}
+var _ReqType_index = [...]uint8{0, 27, 59}
 
 func (i ReqType) String() string {
 	if i >= ReqType(len(_ReqType_index)-1) {
 		return "ReqType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _ReqType_name[_ReqType_index[i]:_ReqType_index[i+1]]
+}
+
+const _RouteStatus_name = "RouteStatusActiveRouteStatusDiscoveryUnderwayRouteStatusDiscoveryFailedRouteStatusInactive"
+
+var _RouteStatus_index = [...]uint8{0, 17, 45, 71, 90}
+
+func (i RouteStatus) String() string {
+	if i >= RouteStatus(len(_RouteStatus_index)-1) {
+		return "RouteStatus(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _RouteStatus_name[_RouteStatus_index[i]:_RouteStatus_index[i+1]]
+}
+
+const _Timeout_name = "Timeout10SecondsTimeout2MinutesTimeout4MinutesTimeout8MinutesTimeout16MinutesTimeout32MinutesTimeout64MinutesTimeout128MinutesTimeout256MinutesTimeout512MinutesTimeout1024MinutesTimeout2048MinutesTimeout4096MinutesTimeout8192MinutesTimeout16384Minutes"
+
+var _Timeout_index = [...]uint8{0, 16, 31, 46, 61, 77, 93, 109, 126, 143, 160, 178, 196, 214, 232, 251}
+
+func (i Timeout) String() string {
+	if i >= Timeout(len(_Timeout_index)-1) {
+		return "Timeout(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _Timeout_name[_Timeout_index[i]:_Timeout_index[i+1]]
+}
+
+const _InstallCodeFormat_name = "InstallCodeFormatCodePlusCrcInstallCodeFormatKeyDerivedFromInstallCode"
+
+var _InstallCodeFormat_index = [...]uint8{0, 28, 70}
+
+func (i InstallCodeFormat) String() string {
+	if i >= InstallCodeFormat(len(_InstallCodeFormat_index)-1) {
+		return "InstallCodeFormat(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _InstallCodeFormat_name[_InstallCodeFormat_index[i]:_InstallCodeFormat_index[i+1]]
+}
+
+const _CommissioningStatus_name = "CommissioningStatusSuccessCommissioningStatusInProgressCommissioningStatusNoNetworkCommissioningStatusTlTargetFailureCommissioningStatusTlNotAaCapableCommissioningStatusTlNoScanResponseCommissioningStatusTlNotPermittedCommissioningStatusTclkExFailureCommissioningStatusFormationFailureCommissioningStatusFbTargetInProgressCommissioningStatusFbInitiatorInProgressCommissioningStatusFbNoIdentifyQueryResponseCommissioningStatusFbBindingTableFullCommissioningStatusNetwork"
+
+var _CommissioningStatus_index = [...]uint16{0, 26, 55, 83, 117, 150, 185, 218, 250, 285, 322, 362, 406, 443, 469}
+
+func (i CommissioningStatus) String() string {
+	if i >= CommissioningStatus(len(_CommissioningStatus_index)-1) {
+		return "CommissioningStatus(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _CommissioningStatus_name[_CommissioningStatus_index[i]:_CommissioningStatus_index[i+1]]
+}
+
+const (
+	_CommissioningMode_name_0 = "CommissioningModeInitializationCommissioningModeTouchLinkCommissioningModeNetworkSteering"
+	_CommissioningMode_name_1 = "CommissioningModeNetworkFormation"
+	_CommissioningMode_name_2 = "CommissioningModeFindingAndBinding"
+)
+
+var (
+	_CommissioningMode_index_0 = [...]uint8{0, 31, 57, 89}
+)
+
+func (i CommissioningMode) String() string {
+	switch {
+	case 0 <= i && i <= 2:
+		return _CommissioningMode_name_0[_CommissioningMode_index_0[i]:_CommissioningMode_index_0[i+1]]
+	case i == 4:
+		return _CommissioningMode_name_1
+	case i == 8:
+		return _CommissioningMode_name_2
+	default:
+		return "CommissioningMode(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+}
+
+const _LqiDeviceType_name = "LqiDeviceTypeCoordinatorLqiDeviceTypeRouterLqiDeviceTypeEndDevice"
+
+var _LqiDeviceType_index = [...]uint8{0, 24, 43, 65}
+
+func (i LqiDeviceType) String() string {
+	if i >= LqiDeviceType(len(_LqiDeviceType_index)-1) {
+		return "LqiDeviceType(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _LqiDeviceType_name[_LqiDeviceType_index[i]:_LqiDeviceType_index[i+1]]
 }

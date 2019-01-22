@@ -78,7 +78,7 @@ func main() {
 	}
 	PrintStruct(res)
 
-	res, err = z.UtilCallbackSubCmd(znp.Zdo, znp.Enable)
+	res, err = z.UtilCallbackSubCmd(znp.SubsystemIdZdo, znp.ActionEnable)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,13 +169,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	res, err = z.ZdoNwkAddrReq("0x00124b00019c2ee9", znp.AssociatedDevicesResponse, 0)
+	res, err = z.ZdoNwkAddrReq("0x00124b00019c2ee9", znp.ReqTypeAssociatedDevicesResponse, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
 	PrintStruct(res)
 
-	res, err = z.ZdoIeeeAddrReq("0x25cc", znp.AssociatedDevicesResponse, 0)
+	res, err = z.ZdoIeeeAddrReq("0x25cc", znp.ReqTypeAssociatedDevicesResponse, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -220,7 +220,7 @@ func main() {
 
 	PrintStruct(res)
 
-	res, err = z.ZdoBindReq("0x0000", "0x00124b00019c2ee9", 1, 30, znp.Addr64Bit, "0x0000000000003000", 2)
+	res, err = z.ZdoBindReq("0x0000", "0x00124b00019c2ee9", 1, 30, znp.AddrModeAddr64Bit, "0x0000000000003000", 2)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -241,14 +241,14 @@ func main() {
 
 	PrintStruct(res)
 
-	res, err = z.ZdoMgmtPermitJoinReq(znp.Addr16Bit, "0x25cc", 3, 1)
+	res, err = z.ZdoMgmtPermitJoinReq(znp.AddrModeAddr16Bit, "0x25cc", 3, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	PrintStruct(res)
 
-	res, err = z.ZdoMgmtNwkUpdateReq("0x25cc", znp.Addr16Bit, &znp.Channels{Channel11: 1, Channel12: 1, Channel13: 1, Channel14: 1}, 1)
+	res, err = z.ZdoMgmtNwkUpdateReq("0x25cc", znp.AddrModeAddr16Bit, &znp.Channels{Channel11: 1, Channel12: 1, Channel13: 1, Channel14: 1}, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
