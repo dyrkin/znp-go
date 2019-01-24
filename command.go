@@ -2,15 +2,13 @@ package znp
 
 import unp "github.com/dyrkin/unp-go"
 
-var asyncCommandRegistry = make(map[registryKey]interface{})
-
 // =======AF=======
 
 func (znp *Znp) AfRegister(endPoint uint8, appProfID uint16, appDeviceID uint16, addDevVer uint8,
 	latencyReq Latency, appInClusterList []uint16, appOutClusterList []uint16) (rsp *StatusResponse, err error) {
 	req := &AfRegister{EndPoint: endPoint, AppProfID: appProfID, AppDeviceID: appDeviceID,
 		AddDevVer: addDevVer, LatencyReq: latencyReq, AppInClusterList: appInClusterList, AppOutClusterList: appOutClusterList}
-	err = znp.ProcessRequest(unp.C_SREQ, unp.S_AF, 0, req, &rsp)
+	err = znp.ProcessRequest(unp.C_SREQ, unp.S_AF, 0x00, req, &rsp)
 	return
 }
 
@@ -1125,6 +1123,8 @@ func (znp *Znp) GpSecRsp(status GpStatus, dGPStubHandle uint8, applicationID uin
 	err = znp.ProcessRequest(unp.C_SREQ, unp.S_GP, 0x02, req, &rsp)
 	return
 }
+
+var asyncCommandRegistry = make(map[registryKey]interface{})
 
 func init() {
 	//AF

@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/sys/unix"
-
 	unp "github.com/dyrkin/unp-go"
 
-	"github.com/dyrkin/znp-go/payload"
+	"github.com/dyrkin/bin"
 	"github.com/dyrkin/znp-go/reflection"
 )
 
@@ -75,7 +73,7 @@ func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsys
 		CommandType: commandType,
 		Subsystem:   subsystem,
 		Command:     command,
-		Payload:     payload.Encode(request),
+		Payload:     bin.Encode(request),
 	}
 	done := make(chan bool, 1)
 	go func() {
@@ -87,7 +85,7 @@ func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsys
 			znp.outbound <- outgoing
 			select {
 			case frame := <-outgoing.syncRsp:
-				payload.Decode(frame.Payload, response)
+				bin.Decode(frame.Payload, response)
 			case err = <-outgoing.syncErr:
 			}
 		} else {
@@ -171,7 +169,7 @@ func (znp *Znp) startProcessor() {
 				key := registryKey{frame.Subsystem, frame.Command}
 				if value, ok := asyncCommandRegistry[key]; ok {
 					copy := reflection.Copy(value)
-					payload.Decode(frame.Payload, copy)
+					bin.Decode(frame.Payload, copy)
 					znp.AsyncInbound <- copy
 				} else {
 					znp.Errors <- fmt.Errorf("Unknown async command received: %v", frame)
@@ -186,9 +184,6 @@ func (znp *Znp) incomingLoop() {
 		frame, err := znp.u.ReadFrame()
 		if err != nil {
 			znp.Errors <- err
-			if err == unix.ENXIO {
-				time.Sleep(5 * time.Second)
-			}
 		} else {
 			logFrame(frame, znp.logInFrames, znp.InFramesLog)
 			znp.inbound <- frame
