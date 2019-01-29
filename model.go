@@ -560,7 +560,7 @@ type UtilSetPanId struct {
 }
 
 type UtilSetChannels struct {
-	Channels uint32
+	Channels *Channels
 }
 
 type UtilSetSecLevel struct {

@@ -431,7 +431,7 @@ func (znp *Znp) UtilSetPanId(panId uint16) (rsp *StatusResponse, err error) {
 
 //UtilSetChannels is used to store a channel select bit-mask into non-volatile memory to be used the
 //next time the target device resets.
-func (znp *Znp) UtilSetChannels(channels uint32) (rsp *StatusResponse, err error) {
+func (znp *Znp) UtilSetChannels(channels *Channels) (rsp *StatusResponse, err error) {
 	req := &UtilSetChannels{Channels: channels}
 	err = znp.ProcessRequest(unp.C_SREQ, unp.S_UTIL, 0x03, req, &rsp)
 	return
