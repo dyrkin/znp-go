@@ -2,7 +2,7 @@ module github.com/dyrkin/znp-go
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/dyrkin/bin v0.0.0-20190124134443-62d6c288b95d
+	github.com/dyrkin/bin v0.0.0-20190204210718-06bd23f8c0ce
 	github.com/dyrkin/composer v0.0.0-20190103203106-6e3835326281 // indirect
 	github.com/dyrkin/unp-go v1.0.2
 	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect
