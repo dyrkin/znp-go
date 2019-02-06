@@ -120,9 +120,10 @@ func (znp *Znp) startProcessor() {
 						if !deadline.timer.Stop() {
 							req.syncErr <- fmt.Errorf("timed out while waiting response for command: 0x%x sent to subsystem: %s ", frame.Command, frame.Subsystem)
 						}
+						registry.Unregister(key)
 					case _ = <-deadline.cancelled:
+						registry.Unregister(key)
 					}
-					registry.Unregister(key)
 				}()
 				logFrame(frame, znp.logOutFrames, znp.OutFramesLog)
 			case *Async:
