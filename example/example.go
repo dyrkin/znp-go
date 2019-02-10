@@ -220,28 +220,14 @@ func main() {
 
 	PrintStruct(res)
 
-	res, err = z.ZdoBindReq("0x0000", "0x00124b00019c2ee9", 1, 30, znp.AddrModeAddr64Bit, "0x0000000000003000", 2)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// res, err = z.ZdoBindReq("0x0000", "0x00124b00019c2ee9", 1, 30, znp.AddrModeAddr64Bit, "0x0000000000003000", 2)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	PrintStruct(res)
+	// PrintStruct(res)
 
-	res, err = z.ZdoMgmtBindReq("0x0000", 0)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	PrintStruct(res)
-
-	res, err = z.ZdoMgmtBindReq("0x0000", 13)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	PrintStruct(res)
-
-	res, err = z.ZdoMgmtPermitJoinReq(znp.AddrModeAddr16Bit, "0x25cc", 3, 1)
+	res, err = z.ZdoMgmtPermitJoinReq(znp.AddrModeAddr16Bit, "0x0000", 255, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -372,11 +358,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// res, err = z.UtilLedControl(1, znp.OFF)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// PrintStruct(res)
+	res, err = z.ZdoStartupFromApp(30)
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
+
+	z.AfRegister(1, 0x0104, 1, 1, znp.LatencyNoLatency, []uint16{}, []uint16{})
+
+	res, err = z.ZdoMgmtBindReq("0x0000", 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	PrintStruct(res)
+
+	res, err = z.UtilLedControl(1, znp.ModeOFF)
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintStruct(res)
 
 	time.Sleep(200 * time.Second)
 }

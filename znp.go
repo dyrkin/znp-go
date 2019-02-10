@@ -52,8 +52,8 @@ func New(u *unp.Unp) *Znp {
 		inbound:      make(chan *unp.Frame),
 		AsyncInbound: make(chan interface{}),
 		Errors:       make(chan error),
-		InFramesLog:  make(chan *unp.Frame),
-		OutFramesLog: make(chan *unp.Frame),
+		InFramesLog:  make(chan *unp.Frame, 100),
+		OutFramesLog: make(chan *unp.Frame, 100),
 	}
 	znp.startProcessor()
 	go znp.incomingLoop()
@@ -112,26 +112,23 @@ func (znp *Znp) startProcessor() {
 						time.NewTimer(5 * time.Second),
 						make(chan bool, 1),
 					}
-					znp.u.WriteFrame(req.frame)
-					responseProcessor := func() {
-						select {
-						case _ = <-deadline.timer.C:
-							if !deadline.timer.Stop() {
-								req.syncErr <- fmt.Errorf("timed out while waiting response for command: 0x%x sent to subsystem: %s ", frame.Command, frame.Subsystem)
-							}
-						case response := <-syncRsp:
-							deadline.Cancel()
-							req.syncRsp <- response
-						case err := <-syncErr:
-							deadline.Cancel()
-							req.syncErr <- err
-						}
-					}
-					go responseProcessor()
 					logFrame(frame, znp.logOutFrames, znp.OutFramesLog)
-				case *Async:
 					znp.u.WriteFrame(req.frame)
+					select {
+					case _ = <-deadline.timer.C:
+						if !deadline.timer.Stop() {
+							req.syncErr <- fmt.Errorf("timed out while waiting response for command: 0x%x sent to subsystem: %s ", frame.Command, frame.Subsystem)
+						}
+					case response := <-syncRsp:
+						deadline.Cancel()
+						req.syncRsp <- response
+					case err := <-syncErr:
+						deadline.Cancel()
+						req.syncErr <- err
+					}
+				case *Async:
 					logFrame(req.frame, znp.logOutFrames, znp.OutFramesLog)
+					znp.u.WriteFrame(req.frame)
 				}
 			}
 		}
