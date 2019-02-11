@@ -29,6 +29,7 @@ func main() {
 	z := znp.New(u)
 	z.LogInFrames(true)
 	z.LogOutFrames(true)
+	z.Start()
 
 	printChan := make(chan string)
 
@@ -44,13 +45,13 @@ func main() {
 	go func() {
 		for {
 			select {
-			case err := <-z.Errors:
+			case err := <-z.Errors():
 				printChan <- fmt.Sprintf("Error: %s\n", err)
-			case async := <-z.AsyncInbound:
+			case async := <-z.AsyncInbound():
 				printChan <- fmt.Sprintf("Async: %s\n", spew.Sdump(async))
-			case _ = <-z.OutFramesLog:
+			case _ = <-z.OutFramesLog():
 				// printChan <- fmt.Sprintf("Frame sent: %s\n", spew.Sdump(frame))
-			case _ = <-z.InFramesLog:
+			case _ = <-z.InFramesLog():
 				// printChan <- fmt.Sprintf("Frame received: %s\n", spew.Sdump(frame))
 			}
 		}

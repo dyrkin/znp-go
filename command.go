@@ -1124,76 +1124,81 @@ func (znp *Znp) GpSecRsp(status GpStatus, dGPStubHandle uint8, applicationID uin
 	return
 }
 
-var asyncCommandRegistry = make(map[registryKey]interface{})
+type key struct {
+	subsystem unp.Subsystem
+	command   byte
+}
+
+var asyncCommandRegistry = make(map[key]interface{})
 
 func init() {
 	//AF
-	asyncCommandRegistry[registryKey{unp.S_AF, 0x80}] = &AfDataConfirm{}
-	asyncCommandRegistry[registryKey{unp.S_AF, 0x83}] = &AfReflectError{}
-	asyncCommandRegistry[registryKey{unp.S_AF, 0x81}] = &AfIncomingMessage{}
-	asyncCommandRegistry[registryKey{unp.S_AF, 0x82}] = &AfIncomingMessageExt{}
+	asyncCommandRegistry[key{unp.S_AF, 0x80}] = &AfDataConfirm{}
+	asyncCommandRegistry[key{unp.S_AF, 0x83}] = &AfReflectError{}
+	asyncCommandRegistry[key{unp.S_AF, 0x81}] = &AfIncomingMessage{}
+	asyncCommandRegistry[key{unp.S_AF, 0x82}] = &AfIncomingMessageExt{}
 
 	//DEBUG
-	asyncCommandRegistry[registryKey{unp.S_DBG, 0x00}] = &DebugMsg{}
+	asyncCommandRegistry[key{unp.S_DBG, 0x00}] = &DebugMsg{}
 
 	//SAPI
-	asyncCommandRegistry[registryKey{unp.S_SAPI, 0x80}] = &SapiZbStartConfirm{}
-	asyncCommandRegistry[registryKey{unp.S_SAPI, 0x81}] = &SapiZbBindConfirm{}
-	asyncCommandRegistry[registryKey{unp.S_SAPI, 0x82}] = &SapiZbAllowBindConfirm{}
-	asyncCommandRegistry[registryKey{unp.S_SAPI, 0x83}] = &SapiZbSendDataConfirm{}
-	asyncCommandRegistry[registryKey{unp.S_SAPI, 0x87}] = &SapiZbReceiveDataIndication{}
-	asyncCommandRegistry[registryKey{unp.S_SAPI, 0x85}] = &SapiZbFindDeviceConfirm{}
+	asyncCommandRegistry[key{unp.S_SAPI, 0x80}] = &SapiZbStartConfirm{}
+	asyncCommandRegistry[key{unp.S_SAPI, 0x81}] = &SapiZbBindConfirm{}
+	asyncCommandRegistry[key{unp.S_SAPI, 0x82}] = &SapiZbAllowBindConfirm{}
+	asyncCommandRegistry[key{unp.S_SAPI, 0x83}] = &SapiZbSendDataConfirm{}
+	asyncCommandRegistry[key{unp.S_SAPI, 0x87}] = &SapiZbReceiveDataIndication{}
+	asyncCommandRegistry[key{unp.S_SAPI, 0x85}] = &SapiZbFindDeviceConfirm{}
 
 	//SYS
-	asyncCommandRegistry[registryKey{unp.S_SYS, 0x80}] = &SysResetInd{}
-	asyncCommandRegistry[registryKey{unp.S_SYS, 0x81}] = &SysOsalTimerExpired{}
+	asyncCommandRegistry[key{unp.S_SYS, 0x80}] = &SysResetInd{}
+	asyncCommandRegistry[key{unp.S_SYS, 0x81}] = &SysOsalTimerExpired{}
 
 	//UTIL
-	asyncCommandRegistry[registryKey{unp.S_UTIL, 0xE0}] = &UtilSyncReq{}
-	asyncCommandRegistry[registryKey{unp.S_UTIL, 0xE1}] = &UtilZclKeyEstablishInd{}
+	asyncCommandRegistry[key{unp.S_UTIL, 0xE0}] = &UtilSyncReq{}
+	asyncCommandRegistry[key{unp.S_UTIL, 0xE1}] = &UtilZclKeyEstablishInd{}
 
 	//ZDO
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x80}] = &ZdoNwkAddrRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x81}] = &ZdoIEEEAddrRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x82}] = &ZdoNodeDescRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x83}] = &ZdoPowerDescRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x84}] = &ZdoSimpleDescRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x85}] = &ZdoActiveEpRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x86}] = &ZdoMatchDescRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x87}] = &ZdoComplexDescRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x88}] = &ZdoUserDescRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x89}] = &ZdoUserDescConf{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0x8A}] = &ZdoServerDiscRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xA0}] = &ZdoEndDeviceBindRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xA1}] = &ZdoBindRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xA2}] = &ZdoUnbindRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xB0}] = &ZdoMgmtNwkDiscRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xB1}] = &ZdoMgmtLqiRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xB2}] = &ZdoMgmtRtgRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xB3}] = &ZdoMgmtBindRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xB4}] = &ZdoMgmtLeaveRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xB5}] = &ZdoMgmtDirectJoinRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xB6}] = &ZdoMgmtPermitJoinRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC0}] = &ZdoStateChangeInd{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC1}] = &ZdoEndDeviceAnnceInd{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC2}] = &ZdoMatchDescRpsSent{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC3}] = &ZdoStatusErrorRsp{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC4}] = &ZdoSrcRtgInd{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC5}] = &ZdoBeaconNotifyInd{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC6}] = &ZdoJoinCnf{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC7}] = &ZdoNwkDiscoveryCnf{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xC9}] = &ZdoLeaveInd{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xFF}] = &ZdoMsgCbIncoming{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xCA}] = &ZdoTcDevInd{}
-	asyncCommandRegistry[registryKey{unp.S_ZDO, 0xCB}] = &ZdoPermitJoinInd{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x80}] = &ZdoNwkAddrRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x81}] = &ZdoIEEEAddrRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x82}] = &ZdoNodeDescRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x83}] = &ZdoPowerDescRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x84}] = &ZdoSimpleDescRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x85}] = &ZdoActiveEpRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x86}] = &ZdoMatchDescRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x87}] = &ZdoComplexDescRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x88}] = &ZdoUserDescRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x89}] = &ZdoUserDescConf{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0x8A}] = &ZdoServerDiscRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xA0}] = &ZdoEndDeviceBindRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xA1}] = &ZdoBindRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xA2}] = &ZdoUnbindRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xB0}] = &ZdoMgmtNwkDiscRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xB1}] = &ZdoMgmtLqiRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xB2}] = &ZdoMgmtRtgRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xB3}] = &ZdoMgmtBindRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xB4}] = &ZdoMgmtLeaveRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xB5}] = &ZdoMgmtDirectJoinRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xB6}] = &ZdoMgmtPermitJoinRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC0}] = &ZdoStateChangeInd{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC1}] = &ZdoEndDeviceAnnceInd{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC2}] = &ZdoMatchDescRpsSent{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC3}] = &ZdoStatusErrorRsp{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC4}] = &ZdoSrcRtgInd{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC5}] = &ZdoBeaconNotifyInd{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC6}] = &ZdoJoinCnf{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC7}] = &ZdoNwkDiscoveryCnf{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xC9}] = &ZdoLeaveInd{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xFF}] = &ZdoMsgCbIncoming{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xCA}] = &ZdoTcDevInd{}
+	asyncCommandRegistry[key{unp.S_ZDO, 0xCB}] = &ZdoPermitJoinInd{}
 
 	//APP
-	asyncCommandRegistry[registryKey{unp.S_APP_CNF, 0x80}] = &AppCnfBdbCommissioningNotification{}
+	asyncCommandRegistry[key{unp.S_APP_CNF, 0x80}] = &AppCnfBdbCommissioningNotification{}
 
 	//GP
-	asyncCommandRegistry[registryKey{unp.S_GP, 0x01}] = &GpDataReq{}
-	asyncCommandRegistry[registryKey{unp.S_GP, 0x02}] = &GpSecRsp{}
-	asyncCommandRegistry[registryKey{unp.S_GP, 0x05}] = &GpDataCnf{}
-	asyncCommandRegistry[registryKey{unp.S_GP, 0x03}] = &GpSecReq{}
-	asyncCommandRegistry[registryKey{unp.S_GP, 0x04}] = &GpDataInd{}
+	asyncCommandRegistry[key{unp.S_GP, 0x01}] = &GpDataReq{}
+	asyncCommandRegistry[key{unp.S_GP, 0x02}] = &GpSecRsp{}
+	asyncCommandRegistry[key{unp.S_GP, 0x05}] = &GpDataCnf{}
+	asyncCommandRegistry[key{unp.S_GP, 0x03}] = &GpSecReq{}
+	asyncCommandRegistry[key{unp.S_GP, 0x04}] = &GpDataInd{}
 }
