@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	unp "github.com/dyrkin/unp-go"
+	"github.com/dyrkin/unp-go"
 
 	"github.com/dyrkin/bin"
 	"github.com/dyrkin/znp-go/reflection"
@@ -22,16 +22,20 @@ func (znp *Znp) Stop() {
 	znp.started = false
 }
 
-func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsystem, command byte, req interface{}, resp interface{}) (err error) {
+func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsystem, command byte, req interface{}, resp interface{}) error {
 	frame := &unp.Frame{
 		CommandType: commandType,
 		Subsystem:   subsystem,
 		Command:     command,
 		Payload:     bin.Encode(req),
 	}
-	done := make(chan bool, 1)
+	return processFrame(znp, frame, resp)
+}
+
+func processFrame(znp *Znp, frame *unp.Frame, resp interface{}) (err error) {
+	completed := make(chan bool, 1)
 	go func() {
-		switch commandType {
+		switch frame.CommandType {
 		case unp.C_SREQ:
 			outgoing := request.NewSync(frame)
 			znp.outbound <- outgoing
@@ -44,11 +48,11 @@ func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsys
 			outgoing := request.NewAsync(frame)
 			znp.outbound <- outgoing
 		default:
-			err = fmt.Errorf("Unsupported command type: %s ", commandType)
+			err = fmt.Errorf("Unsupported command type: %s ", frame.CommandType)
 		}
-		done <- true
+		completed <- true
 	}()
-	<-done
+	<-completed
 	return
 }
 
@@ -81,6 +85,8 @@ func startProcessors(znp *Znp) {
 					syncResponseProcessor(frame)
 				case unp.C_AREQ:
 					asyncResponseProcessor(frame)
+				default:
+					znp.errors <- fmt.Errorf("Unsupported frame received type: %v ", frame)
 				}
 			}
 		}
@@ -132,22 +138,18 @@ func makeAsyncRequestProcessor(znp *Znp) func(req *request.Async) {
 	}
 }
 
+var errorMessages = map[uint8]string{
+	1: "Invalid subsystem",
+	2: "Invalid command ID",
+	3: "Invalid parameter",
+	4: "Invalid length",
+}
+
 func makeSyncResponseProcessor(syncRsp chan *unp.Frame, syncErr chan error) func(frame *unp.Frame) {
 	return func(frame *unp.Frame) {
 		if frame.Subsystem == unp.S_RES0 && frame.Command == 0 {
 			errorCode := frame.Payload[0]
-			var errorMessage string
-			switch errorCode {
-			case 1:
-				errorMessage = "Invalid subsystem"
-			case 2:
-				errorMessage = "Invalid command ID"
-			case 3:
-				errorMessage = "Invalid parameter"
-			case 4:
-				errorMessage = "Invalid length"
-			}
-			syncErr <- errors.New(errorMessage)
+			syncErr <- errors.New(errorMessages[errorCode])
 		} else {
 			syncRsp <- frame
 		}
