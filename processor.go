@@ -33,6 +33,9 @@ func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsys
 }
 
 func processFrame(znp *Znp, frame *unp.Frame, resp interface{}) (err error) {
+	if !znp.started {
+		return errors.New("znp is not started. Call znp.Start() before")
+	}
 	completed := make(chan bool, 1)
 	go func() {
 		switch frame.CommandType {
@@ -48,7 +51,7 @@ func processFrame(znp *Znp, frame *unp.Frame, resp interface{}) (err error) {
 			outgoing := request.NewAsync(frame)
 			znp.outbound <- outgoing
 		default:
-			err = fmt.Errorf("Unsupported command type: %s ", frame.CommandType)
+			err = fmt.Errorf("unsupported command type: %s ", frame.CommandType)
 		}
 		completed <- true
 	}()
@@ -86,7 +89,7 @@ func startProcessors(znp *Znp) {
 				case unp.C_AREQ:
 					asyncResponseProcessor(frame)
 				default:
-					znp.errors <- fmt.Errorf("Unsupported frame received type: %v ", frame)
+					znp.errors <- fmt.Errorf("unsupported frame received type: %v ", frame)
 				}
 			}
 		}
@@ -164,7 +167,7 @@ func makeAsyncResponseProcessor(znp *Znp) func(frame *unp.Frame) {
 			bin.Decode(frame.Payload, copy)
 			znp.asyncInbound <- copy
 		} else {
-			znp.errors <- fmt.Errorf("Unknown async command received: %v", frame)
+			znp.errors <- fmt.Errorf("unknown async command received: %v", frame)
 		}
 	}
 }
