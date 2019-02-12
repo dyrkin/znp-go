@@ -34,7 +34,7 @@ func (znp *Znp) ProcessRequest(commandType unp.CommandType, subsystem unp.Subsys
 
 func processFrame(znp *Znp, frame *unp.Frame, resp interface{}) (err error) {
 	if !znp.started {
-		return errors.New("znp is not started. Call znp.Start() before")
+		panic("Znp is not started. Call znp.Start() before")
 	}
 	completed := make(chan bool, 1)
 	go func() {
@@ -118,7 +118,11 @@ func makeSyncRequestProcessor(znp *Znp, syncRsp chan *unp.Frame, syncErr chan er
 		frame := req.Frame()
 		deadline := time.NewTimer(5 * time.Second)
 		logFrame(frame, znp.logOutFrames, znp.outFramesLog)
-		znp.u.WriteFrame(frame)
+		err := znp.u.WriteFrame(frame)
+		if err != nil {
+			req.SyncErr() <- err
+			return
+		}
 		select {
 		case _ = <-deadline.C:
 			if !deadline.Stop() {
@@ -163,9 +167,9 @@ func makeAsyncResponseProcessor(znp *Znp) func(frame *unp.Frame) {
 	return func(frame *unp.Frame) {
 		key := key{frame.Subsystem, frame.Command}
 		if value, ok := asyncCommandRegistry[key]; ok {
-			copy := reflection.Copy(value)
-			bin.Decode(frame.Payload, copy)
-			znp.asyncInbound <- copy
+			cp := reflection.Copy(value)
+			bin.Decode(frame.Payload, cp)
+			znp.asyncInbound <- cp
 		} else {
 			znp.errors <- fmt.Errorf("unknown async command received: %v", frame)
 		}
