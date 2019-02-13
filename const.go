@@ -370,3 +370,11 @@ const (
 const (
 	InvalidNodeAddr = "0xFFFE"
 )
+
+type LogicalType uint8
+
+const (
+	LogicalTypeCoordinator LogicalType = 0
+	LogicalTypeRouter      LogicalType = 1
+	LogicalTypeeEndDevice  LogicalType = 2
+)

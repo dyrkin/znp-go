@@ -1147,20 +1147,6 @@ type ZdoIEEEAddrRsp struct {
 	AssocDevList []string `size:"1" hex:"2"`
 }
 
-type LogicalType uint8
-
-func (t LogicalType) Coordinator() bool {
-	return t&0x1 > 0
-}
-
-func (t LogicalType) Router() bool {
-	return t&0x2 > 0
-}
-
-func (t LogicalType) EndDevice() bool {
-	return t&0x4 > 0
-}
-
 type ZdoNodeDescRsp struct {
 	SrcAddr                    string `hex:"2"`
 	Status                     Status

@@ -425,3 +425,14 @@ func (i GpDataIndStatus) String() string {
 	}
 	return _GpDataIndStatus_name[_GpDataIndStatus_index[i]:_GpDataIndStatus_index[i+1]]
 }
+
+const _LogicalType_name = "LogicalTypeCoordinatorLogicalTypeRouterLogicalTypeeEndDevice"
+
+var _LogicalType_index = [...]uint8{0, 22, 39, 60}
+
+func (i LogicalType) String() string {
+	if i >= LogicalType(len(_LogicalType_index)-1) {
+		return "LogicalType(" + strconv.FormatInt(int64(i), 10) + ")"
+	}
+	return _LogicalType_name[_LogicalType_index[i]:_LogicalType_index[i+1]]
+}
