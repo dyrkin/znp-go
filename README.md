@@ -39,15 +39,15 @@ func main() {
 Then you be able to run commands:
 
 ```go
-	res, err := z.SysSetExtAddr("0x00124b00019c2ee9")
-	if err != nil {
-		log.Fatal(err)
-	}
+res, err := z.SysSetExtAddr("0x00124b00019c2ee9")
+if err != nil {
+	log.Fatal(err)
+}
 	
-	res, err = z.SapiZbPermitJoiningRequest("0xFF00", 200)
-	if err != nil {
-		log.Fatal(err)
-	}
+res, err = z.SapiZbPermitJoiningRequest("0xFF00", 200)
+if err != nil {
+	log.Fatal(err)
+}
 ```
 
 See more [examples](example/example.go)
