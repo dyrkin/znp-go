@@ -9,7 +9,7 @@ ZigBee target from your application.
 
 I tested it with cc253**1**, but it might work with cc253**X**  
 
-##Example
+## Example
 
 To use it you need to provide a reference to a serial port:
 
