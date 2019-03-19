@@ -1,15 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	unp "github.com/dyrkin/unp-go"
-	znp "github.com/dyrkin/znp-go"
-	serial "go.bug.st/serial.v1"
+	"github.com/dyrkin/unp-go"
+	"github.com/dyrkin/znp-go"
+	"go.bug.st/serial.v1"
 )
 
 func main() {
@@ -21,23 +20,21 @@ func main() {
 
 	port, err := serial.Open("/dev/tty.usbmodem14101", mode)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Can't open port. Reason: %s", err)
 	}
 	port.SetRTS(true)
 
 	u := unp.New(1, port)
 	z := znp.New(u)
-	z.LogInFrames(true)
-	z.LogOutFrames(true)
 	z.Start()
-
-	printChan := make(chan string)
 
 	go func() {
 		for {
 			select {
-			case msg := <-printChan:
-				fmt.Print(msg)
+			case err := <-z.Errors():
+				fmt.Printf("Error received: %s\n", err)
+			case async := <-z.AsyncInbound():
+				fmt.Printf("Async received: %s\n", spew.Sdump(async))
 			}
 		}
 	}()
@@ -45,14 +42,10 @@ func main() {
 	go func() {
 		for {
 			select {
-			case err := <-z.Errors():
-				printChan <- fmt.Sprintf("Error: %s\n", err)
-			case async := <-z.AsyncInbound():
-				printChan <- fmt.Sprintf("Async: %s\n", spew.Sdump(async))
-			case _ = <-z.OutFramesLog():
-				// printChan <- fmt.Sprintf("Frame sent: %s\n", spew.Sdump(frame))
-			case _ = <-z.InFramesLog():
-				// printChan <- fmt.Sprintf("Frame received: %s\n", spew.Sdump(frame))
+			case frame := <-z.OutFramesLog():
+				fmt.Printf("Frame sent: %s\n", spew.Sdump(frame))
+			case frame := <-z.InFramesLog():
+				fmt.Printf("Frame received: %s\n", spew.Sdump(frame))
 			}
 		}
 	}()
@@ -385,9 +378,4 @@ func main() {
 
 func PrintStruct(v interface{}) {
 	spew.Dump(v)
-}
-
-func RenderStruct(v interface{}) string {
-	jsonBytes, _ := json.Marshal(v)
-	return string(jsonBytes)
 }

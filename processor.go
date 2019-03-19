@@ -89,7 +89,10 @@ func startProcessors(znp *Znp) {
 				case unp.C_AREQ:
 					asyncResponseProcessor(frame)
 				default:
-					znp.errors <- fmt.Errorf("unsupported frame received type: %v ", frame)
+					select {
+					case znp.errors <- fmt.Errorf("unsupported frame received type: %v ", frame):
+					default:
+					}
 				}
 			}
 		}
@@ -103,9 +106,12 @@ func startIncomingFrameLoop(znp *Znp) {
 		for znp.started {
 			frame, err := znp.u.ReadFrame()
 			if err != nil {
-				znp.errors <- err
+				select {
+				case znp.errors <- err:
+				default:
+				}
 			} else {
-				logFrame(frame, znp.logInFrames, znp.inFramesLog)
+				logFrame(frame, znp.inFramesLog)
 				znp.inbound <- frame
 			}
 		}
@@ -117,7 +123,7 @@ func makeSyncRequestProcessor(znp *Znp, syncRsp chan *unp.Frame, syncErr chan er
 	return func(req *request.Sync) {
 		frame := req.Frame()
 		deadline := time.NewTimer(5 * time.Second)
-		logFrame(frame, znp.logOutFrames, znp.outFramesLog)
+		logFrame(frame, znp.outFramesLog)
 		err := znp.u.WriteFrame(frame)
 		if err != nil {
 			req.SyncErr() <- err
@@ -140,7 +146,7 @@ func makeSyncRequestProcessor(znp *Znp, syncRsp chan *unp.Frame, syncErr chan er
 
 func makeAsyncRequestProcessor(znp *Znp) func(req *request.Async) {
 	return func(req *request.Async) {
-		logFrame(req.Frame(), znp.logOutFrames, znp.outFramesLog)
+		logFrame(req.Frame(), znp.outFramesLog)
 		znp.u.WriteFrame(req.Frame())
 	}
 }
@@ -169,15 +175,25 @@ func makeAsyncResponseProcessor(znp *Znp) func(frame *unp.Frame) {
 		if value, ok := asyncCommandRegistry[key]; ok {
 			cp := reflection.Copy(value)
 			bin.Decode(frame.Payload, cp)
-			znp.asyncInbound <- cp
+			select {
+			case znp.asyncInbound <- cp:
+			default:
+			}
 		} else {
-			znp.errors <- fmt.Errorf("unknown async command received: %v", frame)
+			select {
+			case znp.errors <- fmt.Errorf("unknown async command received: %v", frame):
+			default:
+			}
 		}
 	}
 }
 
-func logFrame(frame *unp.Frame, log bool, logger chan *unp.Frame) {
-	if log {
-		logger <- frame
-	}
+func logFrame(frame *unp.Frame, logger chan *unp.Frame) {
+	go func() {
+		select {
+		case logger <- frame:
+		default:
+		}
+	}()
+
 }

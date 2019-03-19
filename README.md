@@ -11,11 +11,12 @@ I tested it with cc253**1**, but it might work with cc253**X**
 
 ## Example
 
-To use it you need to provide a reference to a serial port:
+To use it you need to provide a reference to an unp instance:
 
 ```go
 import (
 	"go.bug.st/serial.v1"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dyrkin/unp-go"
 	"github.com/dyrkin/znp-go"
 )
@@ -33,6 +34,7 @@ func main() {
 
 	u := unp.New(1, port)
 	z := znp.New(u)
+	z.Start()
 }
 ```
 
@@ -48,6 +50,36 @@ res, err = z.SapiZbPermitJoiningRequest("0xFF00", 200)
 if err != nil {
 	log.Fatal(err)
 }
+```
+
+To receive async commands and errors, use `AsyncInbound()` and `Errors()` channels:
+
+```go
+go func() {
+    for {
+        select {
+        case err := <-z.Errors():
+            fmt.Printf("Error received: %s\n", err)
+        case async := <-z.AsyncInbound():
+            fmt.Printf("Async received: %s\n", spew.Sdump(async))
+        }
+    }
+}()
+```
+
+To log all ingoing and outgoing unp frames, use `InFramesLog()` and `OutFramesLog()` channels:
+
+```go
+go func() {
+    for {
+        select {
+        case frame := <-z.OutFramesLog():
+            fmt.Printf("Frame sent: %s\n", spew.Sdump(frame))
+        case frame := <-z.InFramesLog():
+            fmt.Printf("Frame received: %s\n", spew.Sdump(frame))
+        }
+    }
+}()
 ```
 
 See more [examples](example/example.go)
